@@ -56,7 +56,9 @@ class MmWaveControlMessage : public SimpleRefCount<MmWaveControlMessage>
         RACH_PREAMBLE, // Random Access Preamble
         RAR,           // Random Access Response
         BSR,           // Buffer Status Report
-        DL_HARQ        // DL HARQ feedback
+        DL_HARQ,        // DL HARQ feedback
+        // new control msg
+        E2
     };
 
     MmWaveControlMessage(void);
@@ -69,6 +71,18 @@ class MmWaveControlMessage : public SimpleRefCount<MmWaveControlMessage>
   private:
     messageType m_messageType;
 };
+
+// modified
+class MmWaveE2ControlMessage: public MmWaveControlMessage
+{
+  MmWaveE2ControlMessage(void);
+  virtual ~MmWaveE2ControlMessage(void);
+
+  void SetMessageBuffer(uint8_t* buff);
+private:
+  uint8_t* m_e2MsgBuff;
+};
+// end modification
 
 class MmWaveTdmaDciMessage : public MmWaveControlMessage
 {

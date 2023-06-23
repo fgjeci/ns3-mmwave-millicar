@@ -78,6 +78,11 @@ class MmWaveLteUeRrcProtocolReal : public Object
     void DoSetup(LteUeRrcSapUser::SetupParameters params);
     void DoSendRrcConnectionRequest(LteRrcSap::RrcConnectionRequest msg);
     void DoSendRrcConnectionSetupCompleted(LteRrcSap::RrcConnectionSetupCompleted msg);
+    
+    // modified
+    void DoSendE2Message(uint8_t* buff, size_t buffSize);
+    // end modification
+    
     void DoSendRrcConnectionReconfigurationCompleted(
         LteRrcSap::RrcConnectionReconfigurationCompleted msg);
     void DoSendRrcConnectionReestablishmentRequest(
@@ -156,6 +161,10 @@ class MmWaveLteEnbRrcProtocolReal : public Object
 
     void DoReceivePdcpSdu(LtePdcpSapUser::ReceivePdcpSduParameters params);
     void DoReceivePdcpPdu(uint16_t rnti, Ptr<Packet> p);
+
+    // modified
+    void DoSendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize);
+    // end modification
 
     uint16_t m_rnti;
     uint16_t m_cellId;

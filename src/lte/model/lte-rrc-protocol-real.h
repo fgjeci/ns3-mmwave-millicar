@@ -114,6 +114,11 @@ class LteUeRrcProtocolReal : public Object
      * \param msg LteRrcSap::RrcConnectionSetupCompleted
      */
     void DoSendRrcConnectionSetupCompleted(LteRrcSap::RrcConnectionSetupCompleted msg);
+    
+    // modified
+    void DoSendE2Message(uint8_t* buff, size_t buffSize);
+    // end modification
+    
     /**
      * Send RRC connection reconfiguration setup completed function
      *
@@ -235,6 +240,9 @@ class LteEnbRrcProtocolReal : public Object
     void SetUeRrcSapProvider(uint16_t rnti, LteUeRrcSapProvider* p);
 
   private:
+    // modified
+    void DoSendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize);
+    // end modification
     // methods forwarded from LteEnbRrcSapUser
     /**
      * Setup UE function

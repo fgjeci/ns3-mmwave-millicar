@@ -145,6 +145,19 @@ MmWaveLteUeRrcProtocolReal::DoSendRrcConnectionRequest(LteRrcSap::RrcConnectionR
     // m_setupParameters.srb0SapProvider->TransmitPdcpPdu (transmitPdcpPduParameters);
 }
 
+// modified
+void
+MmWaveLteUeRrcProtocolReal::DoSendE2Message(uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    Simulator::Schedule(RRC_REAL_MSG_DELAY,
+                        &LteEnbRrcSapProvider::RecvE2Message,
+                        m_enbRrcSapProvider,
+                        m_rnti,
+                        buff, 
+                        buffSize);
+}
+// end modification
+
 void
 MmWaveLteUeRrcProtocolReal::DoSendRrcConnectionSetupCompleted(
     LteRrcSap::RrcConnectionSetupCompleted msg)
@@ -589,6 +602,18 @@ MmWaveLteEnbRrcProtocolReal::DoRemoveUe(uint16_t rnti)
     m_enbRrcSapProviderMap.erase(rnti);
     m_setupUeParametersMap.erase(rnti);
 }
+
+// modified
+void
+MmWaveLteEnbRrcProtocolReal::DoSendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    Simulator::Schedule(RRC_REAL_MSG_DELAY,
+                        &LteUeRrcSapProvider::RecvE2Message,
+                        GetUeRrcSapProvider(rnti),
+                        buff, 
+                        buffSize);
+}
+// end modification
 
 void
 MmWaveLteEnbRrcProtocolReal::DoSendSystemInformation(uint16_t cellId,

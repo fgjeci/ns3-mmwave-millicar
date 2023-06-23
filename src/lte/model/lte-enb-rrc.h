@@ -174,6 +174,10 @@ class UeManager : public Object
                               uint32_t gtpTeid,
                               Ipv4Address transportLayerAddress);
 
+    // TODO doxy
+    std::map <uint8_t, Ptr<LteDataRadioBearerInfo> > GetDrbMap () const;
+    std::map <uint8_t, Ptr<RlcBearerInfo> > GetRlcMap () const;
+
     /**
      * Start all configured data radio bearers. It is safe to call this
      * method if any bearer had been already started previously.
@@ -972,6 +976,14 @@ class LteEnbRrc : public Object
      */
     bool HasUeManager(uint16_t rnti) const;
 
+    // modified
+    void SendE2MessageBuffer(uint16_t rnti, uint8_t* buff, size_t buffSize);
+
+    void DoRecvE2Message(uint16_t rnti, uint8_t* buff, size_t bufferSize);
+
+    void SetE2MEssageRelayCallback(Callback <void, uint8_t*, size_t> cb);
+    // end modification
+
     /**
      *
      *
@@ -1549,6 +1561,14 @@ class LteEnbRrc : public Object
     TypeId GetRlcType(EpsBearer bearer);
 
   public:
+
+    /**
+     * Get the UE map
+     *
+     * \return the map of rnti and UeManager
+     */
+    std::map<uint16_t, Ptr<UeManager> > GetUeMap () const;
+    
     /**
      * Add a neighbour with an X2 interface
      *
@@ -1589,7 +1609,25 @@ class LteEnbRrc : public Object
      */
     void SetCsgId(uint32_t csgId, bool csgIndication);
 
+    /**
+     * Take the HO control for a certain UE
+     * @params imsi UE 
+     */
+    void TakeUeHoControl (uint64_t imsi);
+
+    /**
+     * Triggers an handover between secondary cells
+     * @params imsi UE 
+     * @params targetCellId target cell
+     */
+    void PerformHandoverToTargetCell (uint64_t imsi, uint16_t targetCellId);
+
+
   private:
+    // modified
+    Callback<void, uint8_t*, size_t > m_forwardE2MsgCallback; //!< upward callback to the NetDevice
+    // end modification
+
     /**
      * Allocate a new SRS configuration index for a new UE.
      *
@@ -1976,6 +2014,7 @@ class LteEnbRrc : public Object
     std::map<uint8_t, MmWaveComponentCarrierConf>
         m_mmWaveComponentCarrierPhyConf; ///< mmWave component carrier phy configuration
 
+    std::set<uint64_t> m_e2ControlledUes; ///< contains a list of UEs for which HO is controlled externally 
 }; // end of `class LteEnbRrc`
 
 } // namespace ns3

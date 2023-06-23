@@ -416,7 +416,40 @@ class RrcAsn1Header : public Asn1Header
 
     /// Stores RRC message type, according to 3GPP TS 36.331
     int m_messageType;
+
+    // modified
+    template <size_t numBytes>
+    void SerializeE2Message(uint8_t* e2MsgBuf) const; // 
+    Buffer::Iterator DeserializeE2Message(uint8_t* e2MsgBuf, Buffer::Iterator bIterator);
+    // end modification
 };
+
+// modified
+class RrcE2Message: public RrcAsn1Header{
+  public :
+    RrcE2Message();
+    ~RrcE2Message();
+    // Inherited from RrcAsn1Header
+    uint32_t Deserialize(Buffer::Iterator bIterator);
+    void Print(std::ostream& os) const;
+    void PreSerialize() const;
+
+    protected:
+    /**
+     * Serialize UL DCCH message function
+     *
+     * \param msgType message type
+     */
+    void SerializeE2Message(int msgType) const;
+    /**
+     * Deserialize UL DCCH message function
+     *
+     * \param bIterator buffer iterator
+     * \returns buffer iterator
+     */
+    Buffer::Iterator DeserializeE2Message(Buffer::Iterator bIterator);
+};
+// end modification
 
 /**
  * This class only serves to discriminate which message type has been received

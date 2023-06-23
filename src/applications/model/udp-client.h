@@ -26,6 +26,7 @@
 #include "ns3/event-id.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/ptr.h"
+#include "ns3/traced-callback.h"
 
 namespace ns3
 {
@@ -92,6 +93,10 @@ class UdpClient : public Application
     Address m_peerAddress; //!< Remote peer address
     uint16_t m_peerPort;   //!< Remote peer port
     EventId m_sendEvent;   //!< Event to send the next packet
+    /// Callback for tracing the packet Tx events, includes source, destination,  the packet sent,
+    /// and header , const SeqTsHeader&
+    TracedCallback<Ptr<const Packet>, const Address&, const Address&>
+        m_txTraceWithSeqTs;
 #ifdef NS3_LOG_ENABLE
     std::string m_peerAddressString; //!< Remote peer address string
 #endif                               // NS3_LOG_ENABLE

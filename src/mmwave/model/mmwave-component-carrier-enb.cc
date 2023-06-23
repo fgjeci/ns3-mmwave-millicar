@@ -119,8 +119,8 @@ MmWaveComponentCarrierEnb::DoDispose()
 void
 MmWaveComponentCarrierEnb::DoInitialize(void)
 {
-    NS_LOG_FUNCTION(this);
-    m_isConstructed = true;
+    NS_LOG_FUNCTION(this << m_phy << " " << m_mac);
+    m_isConstructed = true; 
     m_phy->Initialize();
     m_mac->Initialize();
     // m_ffrAlgorithm->Initialize ();

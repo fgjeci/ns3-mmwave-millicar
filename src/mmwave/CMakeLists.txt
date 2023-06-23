@@ -2,7 +2,7 @@ set(source_files
     helper/mmwave-helper.cc
     helper/mmwave-phy-trace.cc
     helper/mmwave-point-to-point-epc-helper.cc
-    helper/mmwave-bearer-stats-calculator.cc
+    # helper/mmwave-bearer-stats-calculator.cc
     helper/mmwave-bearer-stats-connector.cc
     helper/mc-stats-calculator.cc
     helper/core-network-stats-calculator.cc
@@ -56,8 +56,13 @@ set(source_files
     model/error-model/mmwave-eesm-ir-t1.cc
     model/error-model/mmwave-eesm-ir-t2.cc
     model/error-model/mmwave-eesm-ir.cc
-    model/error-model/mmwave-eesm-t1.cc
+    model/error-model/mmwave-eesm-t1.cc 
     model/error-model/mmwave-eesm-t2.cc
+    # modfified
+    model/tiny-xml/tinyxml2.cpp
+    # model/mmwave-vehicular-5g-net-device.cc
+    # helper/cell-handover-control-message.cc
+    # end modification
 )
 
 # GCC Variable Tracking Assignment (VTA) severely slows down compilation with the NR error model
@@ -78,7 +83,7 @@ set(header_files
     helper/mmwave-helper.h
     helper/mmwave-phy-trace.h
     helper/mmwave-point-to-point-epc-helper.h
-    helper/mmwave-bearer-stats-calculator.h
+    # helper/mmwave-bearer-stats-calculator.h
     helper/mc-stats-calculator.h
     helper/core-network-stats-calculator.h
     helper/mmwave-bearer-stats-connector.h
@@ -134,6 +139,29 @@ set(header_files
     model/error-model/mmwave-eesm-ir.h
     model/error-model/mmwave-eesm-t1.h
     model/error-model/mmwave-eesm-t2.h
+    # modfified
+    model/tiny-xml/tinyxml2.h
+    # helper/cell-handover-control-message.h
+    # model/mmwave-vehicular-5g-net-device.h
+    # end modification
+)
+
+set(libraries_to_link
+  ${libcore}
+  ${libnetwork}
+  ${libspectrum}
+  ${libvirtual-net-device}
+  ${libpoint-to-point}
+  ${libapplications}
+  ${libinternet}
+  ${libpropagation}
+  ${liblte}
+  # ${libmpi}
+  ${liboran-interface}
+  ${e2sim_libraries}
+  ${libflow-monitor}
+  ${libnetanim}
+  # ${libmillicar}
 )
 
 build_lib(
@@ -141,14 +169,6 @@ build_lib(
   SOURCE_FILES ${source_files}
   HEADER_FILES ${header_files}
   LIBRARIES_TO_LINK
-    ${libcore}
-    ${libnetwork}
-    ${libspectrum}
-    ${libvirtual-net-device}
-    ${libpoint-to-point}
-    ${libapplications}
-    ${libinternet}
-    ${liblte}
-    ${libpropagation}
+    ${libraries_to_link} 
   TEST_SOURCES ${test_sources}
 )

@@ -53,6 +53,95 @@ namespace ns3
 NS_LOG_COMPONENT_DEFINE("RrcHeader");
 
 //////////////////// RrcAsn1Header class ///////////////////////////////
+// modified
+template <size_t numBytes>
+void
+RrcAsn1Header::SerializeE2Message(uint8_t* e2MsgBuf) const{
+    for(int i = numBytes - 1; i >= 0; --i) {
+        SerializeBitstring(std::bitset<8>(e2MsgBuf[i]));
+    }
+}
+
+Buffer::Iterator
+RrcAsn1Header::DeserializeE2Message(uint8_t* e2MsgBuf, Buffer::Iterator bIterator){
+    uint8_t * buffer = new uint8_t[bIterator.GetSize()];
+    for (int i = bIterator.GetSize()-1; i >= 0; --i){
+        std::bitset<8> byte;
+        bIterator = DeserializeBitstring(&byte, bIterator);
+        buffer[i] = byte.to_ulong();
+    }
+    return bIterator;
+}
+
+///////////////////  RrcE2Message //////////////////////////////////
+RrcE2Message::RrcE2Message()
+    : RrcAsn1Header()
+{
+}
+
+RrcE2Message::~RrcE2Message()
+{
+}
+
+uint32_t
+RrcE2Message::Deserialize(Buffer::Iterator bIterator)
+{
+    DeserializeE2Message(bIterator);
+    return 1;
+}
+
+void
+RrcE2Message::Print(std::ostream& os) const
+{
+    std::cout << "UL DCCH MSG TYPE: " << m_messageType << std::endl;
+}
+
+void
+RrcE2Message::PreSerialize() const
+{
+    m_serializationResult = Buffer();
+
+    SerializeE2Message(m_messageType);
+
+    // Finish serialization
+    FinalizeSerialization();
+}
+
+Buffer::Iterator
+RrcE2Message::DeserializeE2Message(Buffer::Iterator bIterator)
+{
+    std::bitset<0> bitset0;
+    int n;
+
+    bIterator = DeserializeSequence(&bitset0, false, bIterator);
+    bIterator = DeserializeChoice(2, false, &n, bIterator);
+    if (n == 1)
+    {
+        // Deserialize messageClassExtension
+        bIterator = DeserializeSequence(&bitset0, false, bIterator);
+        m_messageType = -1;
+    }
+    else if (n == 0)
+    {
+        // Deserialize c1
+        bIterator = DeserializeChoice(16, false, &m_messageType, bIterator);
+    }
+
+    return bIterator;
+}
+
+void
+RrcE2Message::SerializeE2Message(int messageType) const
+{
+    SerializeSequence(std::bitset<0>(), false);
+    // Choose c1
+    SerializeChoice(2, 0, false);
+    // Choose message type
+    SerializeChoice(16, messageType, false);
+}
+// end modification
+
+
 RrcAsn1Header::RrcAsn1Header()
 {
 }

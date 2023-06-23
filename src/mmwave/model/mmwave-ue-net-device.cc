@@ -208,7 +208,7 @@ Ptr<LteUeComponentCarrierManager>
 MmWaveUeNetDevice::GetComponentCarrierManager(void) const
 {
     NS_LOG_FUNCTION(this);
-    return m_componentCarrierManager;
+    return m_componentCarrierManager; 
 }
 
 Ptr<MmWaveUeMac>
@@ -228,7 +228,7 @@ MmWaveUeNetDevice::GetNas(void) const
 Ptr<LteUeRrc>
 MmWaveUeNetDevice::GetRrc(void) const
 {
-    NS_LOG_FUNCTION(this);
+    // NS_LOG_FUNCTION(this);
     return m_rrc;
 }
 

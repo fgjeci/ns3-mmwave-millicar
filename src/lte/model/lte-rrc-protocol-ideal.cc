@@ -120,6 +120,18 @@ LteUeRrcProtocolIdeal::DoSendRrcConnectionRequest(LteRrcSap::RrcConnectionReques
                         msg);
 }
 
+// modified
+void
+LteUeRrcProtocolIdeal::DoSendE2Message(uint8_t* buff, size_t buffSize){
+    Simulator::Schedule(RRC_IDEAL_MSG_DELAY,
+                        &LteEnbRrcSapProvider::RecvE2Message,
+                        m_enbRrcSapProvider,
+                        m_rnti,
+                        buff, 
+                        buffSize);
+}
+// end modification
+
 void
 LteUeRrcProtocolIdeal::DoSendRrcConnectionSetupCompleted(LteRrcSap::RrcConnectionSetupCompleted msg)
 {
@@ -344,6 +356,17 @@ LteEnbRrcProtocolIdeal::DoRemoveUe(uint16_t rnti)
     NS_LOG_FUNCTION(this << rnti);
     m_enbRrcSapProviderMap.erase(rnti);
 }
+
+// modified
+void
+LteEnbRrcProtocolIdeal::DoSendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize){
+    Simulator::Schedule(RRC_IDEAL_MSG_DELAY,
+                            &LteUeRrcSapProvider::RecvE2Message,
+                            GetUeRrcSapProvider(rnti),
+                            buff, 
+                            buffSize);
+}
+// end modification
 
 void
 LteEnbRrcProtocolIdeal::DoSendSystemInformation(uint16_t cellId, LteRrcSap::SystemInformation msg)

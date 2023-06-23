@@ -1,5 +1,20 @@
 set(libs "${libs_to_build}")
 
+find_external_library(DEPENDENCY_NAME e2sim
+                    HEADER_NAME e2sim.hpp
+                      LIBRARY_NAME e2sim
+                      SEARCH_PATHS /usr/local/lib)
+
+message("The value in src of ${e2sim_INCLUDE_DIRS}")
+
+if(${e2sim_FOUND})
+  set(e2sim_libraries ${e2sim_LIBRARIES})
+  set(e2sim_include_dirs ${e2sim_INCLUDE_DIRS})
+  # target_include_directories(libmmwave PUBLIC ${e2sim_include_dirs})
+  include_directories(${e2sim_include_dirs})
+  link_libraries(${e2sim_libraries})
+endif()
+
 # Process the visualizer module first if enabled
 if(visualizer IN_LIST libs)
   if(${ENABLE_VISUALIZER})

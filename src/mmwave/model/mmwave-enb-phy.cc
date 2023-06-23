@@ -202,7 +202,7 @@ MmWaveEnbPhy::DoInitialize(void)
             (double)m_transient / m_updateSinrPeriod >= 16,
             "Window too small to compute the variance according to the ApplyFilter method");
     }
-    Simulator::Schedule(MicroSeconds(0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
+    // Simulator::Schedule(MicroSeconds(0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
     MmWavePhy::DoInitialize();
 }
 

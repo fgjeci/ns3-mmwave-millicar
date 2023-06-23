@@ -152,6 +152,10 @@ set(source_files
     model/mc-ue-pdcp.cc
     helper/retx-stats-calculator.cc
     helper/mac-tx-stats-calculator.cc
+    # modified
+    model/lte-enb-net-device-oran.cc
+    helper/mmwave-bearer-stats-calculator.cc
+    # modification
 )
 
 set(test_sources
@@ -349,13 +353,13 @@ set(header_files
     model/component-carrier.h
     model/component-carrier-ue.h
     model/component-carrier-enb.h
+    # modified
+    model/lte-enb-net-device-oran.h
+    helper/mmwave-bearer-stats-calculator.h
+    # modification
 )
 
-build_lib(
-  LIBNAME lte
-  SOURCE_FILES ${source_files}
-  HEADER_FILES ${header_files}
-  LIBRARIES_TO_LINK
+set(libraries_to_link
     ${emu_libraries}
     ${libcore}
     ${libnetwork}
@@ -368,6 +372,17 @@ build_lib(
     ${libinternet}
     ${libcsma}
     ${libconfig-store}
+    ${liboran-interface}
+    ${e2sim_libraries}
+    # ${libe2sim}
+)
+
+build_lib(
+  LIBNAME lte
+  SOURCE_FILES ${source_files}
+  HEADER_FILES ${header_files}
+  LIBRARIES_TO_LINK
+    ${libraries_to_link}
   TEST_SOURCES ${test_sources}
   MODULE_ENABLED_FEATURES ${emu_features}
 )

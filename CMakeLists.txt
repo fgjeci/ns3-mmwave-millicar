@@ -155,10 +155,15 @@ add_subdirectory(src)
 add_subdirectory(examples)
 
 # Build scratch/simulation scripts
-add_subdirectory(scratch)
+# add_subdirectory(scratch)
 
 # Build test utils
 add_subdirectory(utils)
+
+# modified
+# build contrib subdirectory
+add_subdirectory(contrib)
+# end modfiication
 
 write_lock()
 write_configtable()

@@ -744,7 +744,7 @@ main(int argc, char* argv[])
     mmwaveHelper->EnableTraces();
 
     // set to true if you want to print the map of buildings, ues and enbs
-    bool print = false;
+    bool print = true;
     if (print)
     {
         PrintGnuplottableBuildingListToFile("buildings.txt");

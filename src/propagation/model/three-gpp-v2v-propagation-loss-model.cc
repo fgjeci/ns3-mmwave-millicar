@@ -174,7 +174,7 @@ ThreeGppV2vUrbanPropagationLossModel::GetLossNlos(double /* distance2D */,
     NS_LOG_FUNCTION(this);
 
     double loss = 36.85 + 30 * log10(distance3D) + 18.9 * log10(m_frequency / 1e9);
-
+    NS_LOG_DEBUG("loss " << loss << " freq " << (m_frequency / 1e9) << " dist " << distance3D);
     return loss;
 }
 

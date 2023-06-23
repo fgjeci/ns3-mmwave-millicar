@@ -3,6 +3,7 @@
  *   Copyright (c) 2011 Centre Tecnologic de Telecomunicacions de Catalunya (CTTC)
  *   Copyright (c) 2015, NYU WIRELESS, Tandon School of Engineering, New York University
  *   Copyright (c) 2016, 2018, University of Padova, Dep. of Information Engineering, SIGNET lab.
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License version 2 as
  *   published by the Free Software Foundation;
@@ -28,92 +29,89 @@
  *                               Integration of Carrier Aggregation
  */
 
-#ifndef SRC_MMWAVE_MODEL_MMWAVE_UE_NET_DEVICE_H_
-#define SRC_MMWAVE_MODEL_MMWAVE_UE_NET_DEVICE_H_
+#ifndef SRC_MMWAVE_MODEL_MMWAVE_ENB_NET_DEVICE_H_
+#define SRC_MMWAVE_MODEL_MMWAVE_ENB_NET_DEVICE_H_
 
-#include "mmwave-enb-net-device.h"
+#include "mmwave-enb-mac.h"
+#include "mmwave-enb-phy.h"
+#include "mmwave-mac-scheduler.h"
 #include "mmwave-net-device.h"
 #include "mmwave-phy.h"
-#include "mmwave-ue-mac.h"
 
 #include "ns3/event-id.h"
 #include "ns3/nstime.h"
 #include "ns3/traced-callback.h"
-#include <ns3/epc-ue-nas.h>
-#include <ns3/lte-ue-rrc.h>
+#include <ns3/lte-enb-rrc.h>
 
 #include <map>
+#include <vector>
 
 namespace ns3
 {
-
+/* Add forward declarations here */
 class Packet;
 class PacketBurst;
 class Node;
-class LteUeComponentCarrierManager;
-
-// class MmWavePhy;
+class LteEnbComponentCarrierManager;
 
 namespace mmwave
 {
-class MmWaveUePhy;
-class MmWaveUeMac;
-class MmWaveEnbNetDevice;
+// class MmWavePhy;
+class MmWaveEnbPhy;
+class MmWaveEnbMac;
 
-class MmWaveUeNetDevice : public MmWaveNetDevice
+class MmWaveEnbNetDevice : public MmWaveNetDevice
 {
   public:
     static TypeId GetTypeId(void);
 
-    MmWaveUeNetDevice(void);
-    virtual ~MmWaveUeNetDevice(void);
-    virtual void DoDispose() override;
+    MmWaveEnbNetDevice();
 
-    uint32_t GetCsgId() const;
-    void SetCsgId(uint32_t csgId);
-
-    void UpdateConfig(void);
-
+    virtual ~MmWaveEnbNetDevice(void);
+    virtual void DoDispose(void) override;
     virtual bool DoSend(Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber) override;
 
-    Ptr<MmWaveUePhy> GetPhy(void) const;
+    Ptr<MmWaveEnbPhy> GetPhy(void) const;
 
-    Ptr<MmWaveUePhy> GetPhy(uint8_t index) const;
+    Ptr<MmWaveEnbPhy> GetPhy(uint8_t index);
 
-    Ptr<MmWaveUeMac> GetMac(void) const; 
+    uint16_t GetCellId() const;
 
-    uint64_t GetImsi() const;
+    bool HasCellId(uint16_t cellId) const;
 
-    Ptr<EpcUeNas> GetNas(void) const;
+    uint8_t GetBandwidth() const;
 
-    Ptr<LteUeComponentCarrierManager> GetComponentCarrierManager(void) const;
+    void SetBandwidth(uint8_t bw);
 
-    Ptr<LteUeRrc> GetRrc() const;
+    Ptr<MmWaveEnbMac> GetMac(void);
 
-    void SetTargetEnb(Ptr<MmWaveEnbNetDevice> enb);
+    Ptr<MmWaveEnbMac> GetMac(uint8_t index);
 
-    Ptr<MmWaveEnbNetDevice> GetTargetEnb(void);
+    void SetRrc(Ptr<LteEnbRrc> rrc);
+
+    Ptr<LteEnbRrc> GetRrc(void);
+
+    void SetCcMap(std::map<uint8_t, Ptr<MmWaveComponentCarrier>> ccm) override;
 
   protected:
-    // inherited from Object
     virtual void DoInitialize(void) override;
+    void UpdateConfig();
 
   private:
-    MmWaveUeNetDevice(const MmWaveUeNetDevice&);
+    Ptr<MmWaveMacScheduler> m_scheduler;
 
-  protected:
+    Ptr<LteEnbRrc> m_rrc;
 
-    Ptr<MmWaveEnbNetDevice> m_targetEnb;
+    uint16_t m_cellId; /* Cell Identifer. To uniquely identify an E-nodeB  */
 
-    Ptr<LteUeRrc> m_rrc;
-    Ptr<EpcUeNas> m_nas;
-    Ptr<LteUeComponentCarrierManager> m_componentCarrierManager; ///< the component carrier manager
+    uint8_t m_Bandwidth; /* bandwidth in RBs (?) */
 
-    uint64_t m_imsi;
+    Ptr<LteEnbComponentCarrierManager>
+        m_componentCarrierManager; ///< the component carrier manager of this eNb
 
-    uint32_t m_csgId;
+    bool m_isConfigured;
 };
-
 } // namespace mmwave
 } // namespace ns3
-#endif /* SRC_MMWAVE_MODEL_MMWAVE_UE_NET_DEVICE_H_ */
+
+#endif /* SRC_MMWAVE_MODEL_MMWAVE_ENB_NET_DEVICE_H_ */

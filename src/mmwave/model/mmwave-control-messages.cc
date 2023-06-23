@@ -59,6 +59,24 @@ MmWaveControlMessage::GetMessageType(void)
     return m_messageType;
 }
 
+// modified
+MmWaveE2ControlMessage::MmWaveE2ControlMessage(void){
+    NS_LOG_INFO(this);
+    SetMessageType(MmWaveControlMessage::E2);
+}
+
+MmWaveE2ControlMessage::~MmWaveE2ControlMessage(void)
+{
+    NS_LOG_INFO(this);
+}
+
+void
+MmWaveE2ControlMessage::SetMessageBuffer(uint8_t* buff)
+{
+    m_e2MsgBuff = buff;
+}
+// end modification
+
 MmWaveTdmaDciMessage::MmWaveTdmaDciMessage(void)
 {
     NS_LOG_INFO(this);

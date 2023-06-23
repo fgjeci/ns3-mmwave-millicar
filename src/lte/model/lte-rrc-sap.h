@@ -982,6 +982,11 @@ class LteUeRrcSapUser : public LteRrcSap
      */
     virtual void SendRrcConnectionSetupCompleted(RrcConnectionSetupCompleted msg) = 0;
 
+    // modified
+    // sending the e2 msg
+    virtual void SendE2Message(uint8_t* buff, size_t buffSize) = 0;
+    // end modification
+
     /**
      * \brief Send an _RRCConnectionReconfigurationComplete_ message to the serving eNodeB
      *        during an RRC connection reconfiguration procedure
@@ -1049,6 +1054,10 @@ class LteUeRrcSapProvider : public LteRrcSap
      * \param msg the message
      */
     virtual void RecvSystemInformation(SystemInformation msg) = 0;
+
+    // modified
+    virtual void RecvE2Message (uint8_t* buff, size_t buffSize) = 0;
+    // end modification
 
     /**
      * \brief Receive an _RRCConnectionSetup_ message from the serving eNodeB
@@ -1151,6 +1160,11 @@ class LteEnbRrcSapUser : public LteRrcSap
      * \param msg the message
      */
     virtual void SendSystemInformation(uint16_t cellId, SystemInformation msg) = 0;
+
+    // modified
+    // Adding as pure virtual the function of sending E2 messages
+    virtual void SendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize) = 0;
+    // end modification
 
     /**
      * \brief Send an _RRCConnectionSetup_ message to a UE
@@ -1294,6 +1308,11 @@ class LteEnbRrcSapProvider : public LteRrcSap
     virtual void RecvRrcConnectionSetupCompleted(uint16_t rnti,
                                                  RrcConnectionSetupCompleted msg) = 0;
 
+
+    // modified
+    virtual void RecvE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize) = 0;
+    // end modification
+
     /**
      * \brief Receive an _RRCConnectionReconfigurationComplete_ message from a UE
      *        during an RRC connection reconfiguration procedure
@@ -1365,6 +1384,9 @@ class MemberLteUeRrcSapUser : public LteUeRrcSapUser
     virtual void Setup(SetupParameters params);
     virtual void SendRrcConnectionRequest(RrcConnectionRequest msg);
     virtual void SendRrcConnectionSetupCompleted(RrcConnectionSetupCompleted msg);
+    // modified
+    virtual void SendE2Message(uint8_t* buff, size_t buffSize);
+    // end modification
     virtual void SendRrcConnectionReconfigurationCompleted(
         RrcConnectionReconfigurationCompleted msg);
     virtual void SendRrcConnectionReestablishmentRequest(RrcConnectionReestablishmentRequest msg);
@@ -1408,6 +1430,15 @@ MemberLteUeRrcSapUser<C>::SendRrcConnectionSetupCompleted(RrcConnectionSetupComp
 {
     m_owner->DoSendRrcConnectionSetupCompleted(msg);
 }
+
+// modified
+template <class C>
+void
+MemberLteUeRrcSapUser<C>::SendE2Message(uint8_t* buff, size_t buffSize)
+{
+    m_owner->DoSendE2Message(buff, buffSize);
+}
+// end modification
 
 template <class C>
 void
@@ -1467,6 +1498,9 @@ class MemberLteUeRrcSapProvider : public LteUeRrcSapProvider
     // methods inherited from LteUeRrcSapProvider go here
     virtual void CompleteSetup(CompleteSetupParameters params);
     virtual void RecvSystemInformation(SystemInformation msg);
+    // modified
+    virtual void RecvE2Message (uint8_t* buff, size_t buffSize);
+    // end modification
     virtual void RecvRrcConnectionSetup(RrcConnectionSetup msg);
     virtual void RecvRrcConnectionReconfiguration(RrcConnectionReconfiguration msg);
     virtual void RecvRrcConnectionReestablishment(RrcConnectionReestablishment msg);
@@ -1505,6 +1539,16 @@ MemberLteUeRrcSapProvider<C>::RecvSystemInformation(SystemInformation msg)
 {
     Simulator::ScheduleNow(&C::DoRecvSystemInformation, m_owner, msg);
 }
+
+// modified
+template <class C>
+void
+MemberLteUeRrcSapProvider<C>::RecvE2Message (uint8_t* buff, size_t buffSize)
+{
+    Simulator::ScheduleNow(&C::DoRecvE2Message, m_owner, buff, buffSize);
+}
+
+// end modification
 
 template <class C>
 void
@@ -1586,6 +1630,9 @@ class MemberLteEnbRrcSapUser : public LteEnbRrcSapUser
     // TODO remove the following declaration
     // virtual void SendSystemInformation (SystemInformation msg);
     virtual void SendSystemInformation(uint16_t cellId, SystemInformation msg);
+    // modified
+    virtual void SendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize);
+    // end modification
     virtual void SendRrcConnectionSetup(uint16_t rnti, RrcConnectionSetup msg);
     virtual void SendRrcConnectionReconfiguration(uint16_t rnti, RrcConnectionReconfiguration msg);
     virtual void SendRrcConnectionReestablishment(uint16_t rnti, RrcConnectionReestablishment msg);
@@ -1645,6 +1692,16 @@ MemberLteEnbRrcSapUser<C>::SendSystemInformation(uint16_t cellId, SystemInformat
 {
     m_owner->DoSendSystemInformation(cellId, msg);
 }
+
+// modified
+template <class C>
+void
+MemberLteEnbRrcSapUser<C>::SendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize)
+{
+    m_owner->DoSendE2Message(rnti, buff, buffSize);
+}
+
+// end modification
 
 template <class C>
 void
@@ -1755,6 +1812,10 @@ class MemberLteEnbRrcSapProvider : public LteEnbRrcSapProvider
     virtual void CompleteSetupUe(uint16_t rnti, CompleteSetupUeParameters params);
     virtual void RecvRrcConnectionRequest(uint16_t rnti, RrcConnectionRequest msg);
     virtual void RecvRrcConnectionSetupCompleted(uint16_t rnti, RrcConnectionSetupCompleted msg);
+    // modified
+    virtual void RecvE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize);
+    // end modification
+    
     virtual void RecvRrcConnectionReconfigurationCompleted(
         uint16_t rnti,
         RrcConnectionReconfigurationCompleted msg);
@@ -1804,6 +1865,15 @@ MemberLteEnbRrcSapProvider<C>::RecvRrcConnectionSetupCompleted(uint16_t rnti,
 {
     Simulator::ScheduleNow(&C::DoRecvRrcConnectionSetupCompleted, m_owner, rnti, msg);
 }
+
+// modified
+template <class C>
+void
+MemberLteEnbRrcSapProvider<C>::RecvE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize)
+{
+    Simulator::ScheduleNow(&C::DoRecvE2Message, m_owner, rnti, buff, buffSize);
+}
+// end modification
 
 template <class C>
 void

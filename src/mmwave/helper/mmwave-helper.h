@@ -74,6 +74,7 @@
 #include <ns3/node-container.h>
 #include <ns3/node.h>
 #include <ns3/propagation-loss-model.h>
+#include <ns3/mmwave-beamforming-model.h>
 #include <ns3/simulator.h>
 #include <ns3/spectrum-phy.h>
 

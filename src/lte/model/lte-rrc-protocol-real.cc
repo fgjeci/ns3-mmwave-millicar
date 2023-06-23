@@ -140,6 +140,18 @@ LteUeRrcProtocolReal::DoSendRrcConnectionRequest(LteRrcSap::RrcConnectionRequest
     // m_setupParameters.srb0SapProvider->TransmitPdcpPdu (transmitPdcpPduParameters);
 }
 
+// modified
+void
+LteUeRrcProtocolReal::DoSendE2Message(uint8_t* buff, size_t buffSize){
+    Simulator::Schedule(RRC_REAL_MSG_DELAY,
+                        &LteEnbRrcSapProvider::RecvE2Message,
+                        m_enbRrcSapProvider,
+                        m_rnti,
+                        buff, 
+                        buffSize);
+}
+// end modification
+
 void
 LteUeRrcProtocolReal::DoSendRrcConnectionSetupCompleted(LteRrcSap::RrcConnectionSetupCompleted msg)
 {
@@ -559,6 +571,27 @@ LteEnbRrcProtocolReal::DoRemoveUe(uint16_t rnti)
     m_enbRrcSapProviderMap.erase(rnti);
     m_setupUeParametersMap.erase(rnti);
 }
+
+// modified
+void
+LteEnbRrcProtocolReal::DoSendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize){
+
+    Simulator::Schedule(RRC_REAL_MSG_DELAY,
+                            &LteUeRrcSapProvider::RecvE2Message,
+                            GetUeRrcSapProvider(rnti),
+                            buff, 
+                            buffSize);
+    // real code 
+    // Ptr<Packet> packet = Create<Packet>();
+
+    // LteRlcSapProvider::TransmitPdcpPduParameters transmitPdcpPduParameters;
+    // transmitPdcpPduParameters.pdcpPdu = packet;
+    // transmitPdcpPduParameters.rnti = rnti;
+    // transmitPdcpPduParameters.lcid = 0;
+
+    // m_setupUeParametersMap[rnti].srb0SapProvider->TransmitPdcpPdu(transmitPdcpPduParameters);
+}
+// end modification
 
 void
 LteEnbRrcProtocolReal::DoSendSystemInformation(uint16_t cellId, LteRrcSap::SystemInformation msg)

@@ -15,6 +15,7 @@ set(base_examples
     mmwave-ca-same-bandwidth
     mmwave-ca-diff-bandwidth
     mmwave-beamforming-codebook-example
+    # ric-control-message
 )
 
 foreach(

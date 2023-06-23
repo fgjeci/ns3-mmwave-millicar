@@ -2449,6 +2449,18 @@ UeManager::GetState(void) const
     return m_state;
 }
 
+std::map <uint8_t, Ptr<LteDataRadioBearerInfo> > 
+UeManager::GetDrbMap () const
+{
+  return m_drbMap;
+}
+
+std::map <uint8_t, Ptr<RlcBearerInfo> > 
+UeManager::GetRlcMap () const
+{
+  return m_rlcMap;
+}
+
 void
 UeManager::SetPdschConfigDedicated(LteRrcSap::PdschConfigDedicated pdschConfigDedicated)
 {
@@ -3518,6 +3530,38 @@ LteEnbRrc::GetLteEnbCphySapUser(uint8_t pos)
     return m_cphySapUser.at(pos);
 }
 
+// modified
+void 
+LteEnbRrc::SendE2MessageBuffer(uint16_t rnti, uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    m_rrcSapUser->SendE2Message(rnti, buff, buffSize);
+}
+
+void
+LteEnbRrc::DoRecvE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    // relay the message to the xapp
+    if(!m_forwardE2MsgCallback.IsNull()){
+        // call callback when data is being receivef from a user
+        m_forwardE2MsgCallback(buff, buffSize);
+    }
+}
+
+void
+LteEnbRrc::SetE2MEssageRelayCallback (Callback <void, uint8_t*, size_t > cb)
+{
+  m_forwardE2MsgCallback = cb;
+}
+
+// end modification
+
+
+std::map<uint16_t, Ptr<UeManager> >
+LteEnbRrc::GetUeMap() const
+{
+  return m_ueMap;
+}
+
 bool
 LteEnbRrc::HasUeManager(uint16_t rnti) const
 {
@@ -4399,6 +4443,68 @@ LteEnbRrc::PerformHandover(uint64_t imsi)
 }
 
 void
+LteEnbRrc::TakeUeHoControl (uint64_t imsi)
+{
+  NS_LOG_FUNCTION (this);
+  NS_LOG_INFO ("UE " << +imsi << " has external HO control");
+  m_e2ControlledUes.insert (imsi);
+}
+
+void
+LteEnbRrc::PerformHandoverToTargetCell (uint64_t imsi, uint16_t targetCellId)
+{
+  NS_LOG_FUNCTION (this << +imsi << +targetCellId);
+  
+  bool alreadyAssociatedImsi = false;
+  bool onHandoverImsi = true;
+  // On RecvRrcConnectionRequest for a new RNTI, the Lte Enb RRC stores the imsi
+  // of the UE and insert a new false entry in m_mmWaveCellSetupCompleted.
+  // After the first connection to a MmWave eNB, the entry becomes true.
+  // When an handover between MmWave cells is triggered, it is set to false.
+  if(m_mmWaveCellSetupCompleted.find(imsi) != m_mmWaveCellSetupCompleted.end())
+  {
+    alreadyAssociatedImsi = true;
+    //onHandoverImsi = (!m_switchEnabled) ? true : !m_mmWaveCellSetupCompleted.find(imsi)->second;
+    onHandoverImsi = !m_mmWaveCellSetupCompleted.find(imsi)->second;
+  }
+  else
+  {
+    alreadyAssociatedImsi = false;
+    onHandoverImsi = true;
+  }
+  NS_LOG_INFO("PerformHandover: alreadyAssociatedImsi " << alreadyAssociatedImsi << " onHandoverImsi " << onHandoverImsi);
+
+  if(alreadyAssociatedImsi)
+  {
+    if(!onHandoverImsi)
+    {
+      // The new secondary cell HO procedure does not require to switch to LTE
+      NS_LOG_INFO("PerformHandover ----- handover from " << m_lastMmWaveCell[imsi] << 
+                  " to " << targetCellId << " at time " << Simulator::Now().GetSeconds());
+
+      // trigger ho via X2
+      EpcX2SapProvider::SecondaryHandoverParams params;
+      params.imsi = imsi;
+      params.targetCellId = targetCellId;
+      params.oldCellId = m_lastMmWaveCell[imsi];
+      m_x2SapProvider->SendMcHandoverRequest(params);
+
+      m_mmWaveCellSetupCompleted[imsi] = false;
+    }
+    else
+    {
+      //TODO Do nothing or what?
+      NS_LOG_UNCOND("## Warn: handover not triggered because the UE is already performing HO!");
+    }
+  }
+  else
+  {
+    NS_LOG_UNCOND("## Warn: handover not triggered because the UE is not associated yet!");
+  }
+}
+
+
+void
 LteEnbRrc::ThresholdBasedSecondaryCellHandover(std::map<uint64_t, CellSinrMap>::iterator imsiIter,
                                                double sinrDifference,
                                                uint16_t maxSinrCellId,
@@ -4554,6 +4660,15 @@ LteEnbRrc::TriggerUeAssociationUpdate()
              ++imsiIter)
         {
             uint64_t imsi = imsiIter->first;
+
+            // modified
+            if (m_e2ControlledUes.find (imsi) != m_e2ControlledUes.end ())
+            {
+                // HO for this UE is controlled externally
+                continue;
+            }
+            // end modification
+
             long double maxSinr = 0;
             long double currentSinr = 0;
             uint16_t maxSinrCellId = 0;

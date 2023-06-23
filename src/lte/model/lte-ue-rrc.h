@@ -263,6 +263,13 @@ class LteUeRrc : public Object
      */
     LteUeCcmRrcSapUser* GetLteCcmRrcSapUser();
 
+    // modiifed
+    void SendE2MessageBuffer(uint8_t* buff, size_t buffSize);
+
+    void DoRecvE2Message(uint8_t* buff, size_t buffSize);
+    void SetE2MEssageRelayCallback(Callback <void, uint8_t*, size_t> cb);
+    // end modification
+
     /**
      *
      * \param imsi the unique UE identifier
@@ -388,6 +395,10 @@ class LteUeRrc : public Object
                                                      std::list<LteRrcSap::SCellToAddMod>);
 
   private:
+
+    // modified
+    Callback<void, uint8_t*, size_t > m_forwardE2MsgCallback; //!< upward callback to the NetDevice
+    // end modification
     // PDCP SAP methods
     /**
      * Receive PDCP SDU function

@@ -114,6 +114,8 @@ MmWaveUeRrcProtocolIdeal::DoSetup(LteUeRrcSapUser::SetupParameters params)
     // We don't care about SRB0/SRB1 since we use ideal RRC messages.
 }
 
+
+
 void
 MmWaveUeRrcProtocolIdeal::DoSendRrcConnectionRequest(LteRrcSap::RrcConnectionRequest msg)
 {
@@ -128,6 +130,19 @@ MmWaveUeRrcProtocolIdeal::DoSendRrcConnectionRequest(LteRrcSap::RrcConnectionReq
                         m_rnti,
                         msg);
 }
+
+// modified
+void
+MmWaveUeRrcProtocolIdeal::DoSendE2Message(uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    Simulator::Schedule(RRC_IDEAL_MSG_DELAY,
+                        &LteEnbRrcSapProvider::RecvE2Message,
+                        m_enbRrcSapProvider,
+                        m_rnti,
+                        buff,
+                        buffSize);
+}
+// end modification
 
 void
 MmWaveUeRrcProtocolIdeal::DoSendRrcConnectionSetupCompleted(
@@ -346,6 +361,18 @@ MmWaveEnbRrcProtocolIdeal::DoRemoveUe(uint16_t rnti)
     m_enbRrcSapProviderMap.erase(rnti);
 }
 
+// modified
+void
+MmWaveEnbRrcProtocolIdeal::DoSendE2Message(uint16_t rnti, uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    Simulator::Schedule(RRC_IDEAL_MSG_DELAY,
+                        &LteUeRrcSapProvider::RecvE2Message,
+                        GetUeRrcSapProvider(rnti),
+                        buff, 
+                        buffSize);
+}
+// end modification
+
 void
 MmWaveEnbRrcProtocolIdeal::DoSendSystemInformation(uint16_t cellId,
                                                    LteRrcSap::SystemInformation msg)
@@ -433,6 +460,7 @@ void
 MmWaveEnbRrcProtocolIdeal::DoSendRrcConnectionSetup(uint16_t rnti,
                                                     LteRrcSap::RrcConnectionSetup msg)
 {
+    NS_LOG_FUNCTION(this);
     Simulator::Schedule(RRC_IDEAL_MSG_DELAY,
                         &LteUeRrcSapProvider::RecvRrcConnectionSetup,
                         GetUeRrcSapProvider(rnti),
@@ -444,6 +472,7 @@ MmWaveEnbRrcProtocolIdeal::DoSendRrcConnectionReconfiguration(
     uint16_t rnti,
     LteRrcSap::RrcConnectionReconfiguration msg)
 {
+    NS_LOG_FUNCTION(this);
     Simulator::Schedule(RRC_IDEAL_MSG_DELAY,
                         &LteUeRrcSapProvider::RecvRrcConnectionReconfiguration,
                         GetUeRrcSapProvider(rnti),
@@ -738,6 +767,8 @@ MmWaveEnbRrcProtocolIdeal::DoDecodeHandoverCommand(Ptr<Packet> p)
     g_handoverCommandMsgMap.erase(it);
     return msg;
 }
+
+
 
 } // namespace mmwave
 

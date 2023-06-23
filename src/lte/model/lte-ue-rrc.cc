@@ -482,6 +482,31 @@ LteUeRrc::GetCellId() const
     return m_cellId;
 }
 
+// modified
+void 
+LteUeRrc::SendE2MessageBuffer(uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    m_rrcSapUser->SendE2Message(buff, buffSize);
+}
+
+void 
+LteUeRrc::SetE2MEssageRelayCallback(Callback <void, uint8_t*, size_t> cb){
+    NS_LOG_FUNCTION(this);
+    m_forwardE2MsgCallback = cb;
+}
+
+void
+LteUeRrc::DoRecvE2Message(uint8_t* buff, size_t buffSize){
+    NS_LOG_FUNCTION(this);
+    // relay the message to the device
+    if(!m_forwardE2MsgCallback.IsNull()){
+        // call callback when data is being receivef from a user
+        m_forwardE2MsgCallback(buff, buffSize);
+    }
+}
+
+// end modification
+
 void
 LteUeRrc::AddMmWaveCellId(uint16_t cellId)
 {
