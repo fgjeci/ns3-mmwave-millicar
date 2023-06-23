@@ -247,6 +247,12 @@ class LteRlc : public Object
     TracedCallback<uint16_t, uint8_t, uint32_t, uint32_t>
         m_txCompletedCallback; // callback used to broadcast the number of retx for each RLC packet
 
+    // modified
+    // capture the size of the buffer at a given time
+    // current size and the maximun size
+    TracedCallback<uint32_t, uint32_t> m_rlcBufferSize;
+    // end modification
+
     // MC functionalities
     // UeDataParams needed to forward data to MmWave
     EpcX2Sap::UeDataParams m_ueDataParams;

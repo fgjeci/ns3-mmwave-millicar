@@ -36,7 +36,8 @@ ThreeGppV2vUrbanChannelConditionModel::GetTypeId()
     static TypeId tid = TypeId("ns3::ThreeGppV2vUrbanChannelConditionModel")
                             .SetParent<ThreeGppChannelConditionModel>()
                             .SetGroupName("Buildings")
-                            .AddConstructor<ThreeGppV2vUrbanChannelConditionModel>();
+                            .AddConstructor<ThreeGppV2vUrbanChannelConditionModel>()
+                            ;
     return tid;
 }
 

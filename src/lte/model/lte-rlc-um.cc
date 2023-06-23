@@ -126,6 +126,10 @@ LteRlcUm::DoTransmitPdcpPdu(Ptr<Packet> p)
         NS_LOG_LOGIC("Tx Buffer: New packet added");
         m_txBuffer.push_back(p);
         m_txBufferSize += p->GetSize();
+        // modified 
+        // add data to trace
+        m_rlcBufferSize(m_txBufferSize, m_maxTxBufferSize);
+        // end modification
         NS_LOG_LOGIC("NumOfBuffers = " << m_txBuffer.size());
         NS_LOG_LOGIC("txBufferSize = " << m_txBufferSize);
     }
@@ -191,6 +195,10 @@ LteRlcUm::DoNotifyTxOpportunity(LteMacSapUser::TxOpportunityParameters txOpParam
     NS_LOG_LOGIC("Remove SDU from TxBuffer");
     Ptr<Packet> firstSegment = (*(m_txBuffer.begin()))->Copy();
     m_txBufferSize -= (*(m_txBuffer.begin()))->GetSize();
+    // modified 
+    // add data to trace
+    m_rlcBufferSize(m_txBufferSize, m_maxTxBufferSize);
+    // end modification
     NS_LOG_LOGIC("txBufferSize      = " << m_txBufferSize);
     m_txBuffer.erase(m_txBuffer.begin());
 
@@ -243,6 +251,10 @@ LteRlcUm::DoNotifyTxOpportunity(LteMacSapUser::TxOpportunityParameters txOpParam
                 m_txBuffer.insert(m_txBuffer.begin(), firstSegment);
                 m_txBufferSize += (*(m_txBuffer.begin()))->GetSize();
 
+                // modified 
+                // add data to trace
+                m_rlcBufferSize(m_txBufferSize, m_maxTxBufferSize);
+                // end modification
                 NS_LOG_LOGIC("    TX buffer: Give back the remaining segment");
                 NS_LOG_LOGIC("    TX buffers = " << m_txBuffer.size());
                 NS_LOG_LOGIC("    Front buffer size = " << (*(m_txBuffer.begin()))->GetSize());
@@ -346,6 +358,10 @@ LteRlcUm::DoNotifyTxOpportunity(LteMacSapUser::TxOpportunityParameters txOpParam
             // (more segments)
             firstSegment = (*(m_txBuffer.begin()))->Copy();
             m_txBufferSize -= (*(m_txBuffer.begin()))->GetSize();
+            // modified 
+            // add data to trace
+            m_rlcBufferSize(m_txBufferSize, m_maxTxBufferSize);
+            // end modification
             m_txBuffer.erase(m_txBuffer.begin());
             NS_LOG_LOGIC("        txBufferSize = " << m_txBufferSize);
         }

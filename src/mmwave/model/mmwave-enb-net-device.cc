@@ -29,6 +29,13 @@
 *                                Integration of Carrier Aggregation
 */
 
+#define NS_LOG_APPEND_CONTEXT                                            \
+do                                                                     \
+  {                                                                    \
+    std::clog << Simulator::Now();  \
+  }                                                                    \
+while (false);
+
 
 #include <ns3/llc-snap-header.h>
 #include <ns3/simulator.h>
@@ -218,6 +225,18 @@ TypeId MmWaveEnbNetDevice::GetTypeId ()
                     MakeTraceSourceAccessor (&MmWaveEnbNetDevice::m_ricControlMessageTrace),
                      "ns3::millicar::MmWaveEnbNetDevice::RicControlMessageTracedCallback"
                     ) 
+    .AddAttribute ("PlmnId",
+                    "the plmn id identifying the lte coordinator; shall be used to "
+                    " distinguish different simulation campaign involving the same xapp",
+                    StringValue("111"),
+                    MakeStringAccessor(&MmWaveEnbNetDevice::m_ltePlmnId),
+                    MakeStringChecker()
+                  )
+    .AddAttribute ("TracesPath",
+                    "The path where to store the path. ",
+                    StringValue ("./"),
+                    MakeStringAccessor (&MmWaveEnbNetDevice::m_tracesPath),
+                    MakeStringChecker ())
   ;
   return tid;
 }
@@ -233,7 +252,8 @@ MmWaveEnbNetDevice::MmWaveEnbNetDevice ()
     m_forceE2FileLogging (false),
     m_cuUpFileName (),
     m_cuCpFileName (),
-    m_duFileName ()
+    m_duFileName (),
+    m_ricControlReceivedFilename()
 {
   NS_LOG_FUNCTION (this);
 }
@@ -349,16 +369,34 @@ MmWaveEnbNetDevice::RegisterSlSinrReportReadingCallback(Ptr<MmWaveEnbNetDevice> 
 void
 MmWaveEnbNetDevice::RegisterSlSinrReportReading(uint16_t localRnti, uint16_t destRnti, uint8_t numSym, uint32_t tbSize, double avgSinr) // , double positionX, double positionY
 {
+  if (std::isnan(std::abs(avgSinr)) ){
+    return;
+  }
   // NS_LOG_FUNCTION(this);
   m_l3sinrMillicarMap[localRnti][destRnti].mcs = numSym;
-  m_l3sinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
-
+  // original
+  // m_l3sinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
+  // end original
+  // modified
+  // the average over the the period
+  double _ratio_num_samples = ((double) m_l3sinrMillicarMap[localRnti][destRnti].number_of_samples)/
+                              ((double)m_l3sinrMillicarMap[localRnti][destRnti].number_of_samples+1);
+  if (m_l3sinrMillicarMap[localRnti][destRnti].number_of_samples == 0){
+    // first sample
+    m_l3sinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
+  }else{
+    m_l3sinrMillicarMap[localRnti][destRnti].sinr = m_l3sinrMillicarMap[localRnti][destRnti].sinr* \
+    _ratio_num_samples + avgSinr/(m_l3sinrMillicarMap[localRnti][destRnti].number_of_samples+1);
+  }
+  // end modification
   // m_l3sinrMillicarMap[localRnti][destRnti].positionX = positionX;
   // m_l3sinrMillicarMap[localRnti][destRnti].positionY = positionY;
+  m_l3sinrMillicarMap[localRnti][destRnti].number_of_samples+=1;
   
-  // NS_LOG_LOGIC (Simulator::Now ().GetSeconds ()
-  //               << " uedev " << localRnti << " report for " << destRnti
-  //               << " SINR " << m_l3sinrMillicarMap[localRnti][destRnti].sinr);
+  // NS_LOG_LOGIC (" lr " << localRnti << " dr " << destRnti
+  //               << " ls " << m_l3sinrMillicarMap[localRnti][destRnti].sinr
+  //               << " rs " << avgSinr << " ration " << _ratio_num_samples
+  //               << " num " << m_l3sinrMillicarMap[localRnti][destRnti].number_of_samples);
 }
 
 void
@@ -371,8 +409,37 @@ void
 MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uint64_t destRnti, double avgSinr) // , double positionX, double positionY
 {
   // NS_LOG_FUNCTION(this);
+  if (std::isnan(std::abs(avgSinr)) ){
+    return;
+  }
+
+
   m_pairsSinrMillicarMap[localRnti][destRnti].mcs = 0;
-  m_pairsSinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
+  // original
+  // m_pairsSinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
+  // end original
+  // modified
+  // instead of the last value we take the mean 
+  double _ratio_num_samples = ((double)m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples)/
+                              ((double)m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+1);
+  // previous value * _ratio_num_samples + new_sinr_value/(num_samples+1)
+  if (m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples == 0){
+    m_pairsSinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
+  }else{
+    m_pairsSinrMillicarMap[localRnti][destRnti].sinr = m_pairsSinrMillicarMap[localRnti][destRnti].sinr* \
+  _ratio_num_samples + avgSinr/(m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+1);
+  }
+  
+  
+  // end modification
+  
+  m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+=1;
+
+  // NS_LOG_LOGIC (Simulator::Now ().GetSeconds ()
+  //               << " lr " << localRnti << " dr " << destRnti
+  //               << " ls " << m_pairsSinrMillicarMap[localRnti][destRnti].sinr
+  //               << " rs " << avgSinr << " ratio " << _ratio_num_samples 
+  //               << " num " << m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples);
 }
 
 // modified
@@ -498,6 +565,12 @@ MmWaveEnbNetDevice::UpdateConfig (void)
 
 
               if(!m_forceE2FileLogging) {
+                // received control messages
+                m_ricControlReceivedFilename = m_tracesPath + "ric-control-messages-" + std::to_string(m_cellId) + ".txt";
+                std::ofstream csv {};
+                csv.open (m_ricControlReceivedFilename.c_str ());
+                csv << "timestamp,sourceRnti,destinationRnti,intermediateRnti\n";
+                csv.close();
                 Simulator::Schedule (MicroSeconds (0), &E2Termination::Start, m_e2term);
               }
               // else {
@@ -598,12 +671,25 @@ MmWaveEnbNetDevice::GetE2Termination() const
 }
 
 void
-MmWaveEnbNetDevice::AddToDoHandoverTrace(uint16_t sourceCellId, uint64_t imsi, uint16_t destinationCellId){
-  NS_LOG_FUNCTION(this << sourceCellId << imsi << destinationCellId);
-  // m_doHandoverTrace(sourceCellId, imsi, destinationCellId);
-
+MmWaveEnbNetDevice::AddToDoHandoverTrace(uint16_t destinationRnti, uint64_t sourceRnti, uint16_t relayRnti){
+  NS_LOG_FUNCTION(this << sourceRnti << destinationRnti << relayRnti);
   // source, destination, intermediate rnti
-  m_ricControlMessageTrace(12, 12, 12);
+  m_ricControlMessageTrace(sourceRnti, destinationRnti, relayRnti);
+
+  std::ofstream csv {};
+  csv.open (m_ricControlReceivedFilename.c_str (),  std::ios_base::app);
+  if (!csv.is_open ())
+  {
+    NS_FATAL_ERROR ("Can't open file " << m_ricControlReceivedFilename.c_str ());
+  }
+
+  std::string to_print = std::to_string(Simulator::Now().GetSeconds ()) + "," +
+                                    std::to_string(sourceRnti) + "," +
+                                    std::to_string(destinationRnti) + "," +
+                                    std::to_string(relayRnti) + "\n";
+  csv << to_print;
+  
+  csv.close();
 }
 
 void 
@@ -615,24 +701,29 @@ MmWaveEnbNetDevice::DoHandoverTrace (E2AP_PDU_t* ric_pdu)
   NS_LOG_INFO ("\n Message type received " << controlMessage->m_messageFormatType << "\n");
   // xer_fprint(stderr, &asn_DEF_E2AP_PDU, ric_pdu);
   if (controlMessage->m_messageFormatType == RicControlMessage::ControlMessage_PR_handoverMessage_Format){
-    std::map<long, std::map<long, long>> resultMap = controlMessage->m_allHandoverList;
-    NS_LOG_DEBUG("The map size " << resultMap.size());
-    // NS_LOG_DEBUG(resultMap);
-    // create a function to actuate the handover action
-    // auto mapIt = resultMap.find((long)m_cellId);
-    for (std::map<long, std::map<long, long>>::iterator mapIt = resultMap.begin(); 
-      mapIt!=resultMap.end(); ++mapIt){
-      for(std::map<long,long>::iterator singleUser = mapIt->second.begin(); singleUser!=mapIt->second.end(); ++singleUser){
-        uint64_t ueId = (uint64_t) singleUser->first;
-        uint16_t destinationCellid = (uint16_t) singleUser->second;
-          NS_LOG_INFO("User id " << ueId << " has to be moved to cell id " << destinationCellid);
-          Simulator::ScheduleWithContext(1, Seconds(0), 
-            &MmWaveEnbNetDevice::AddToDoHandoverTrace, this, (uint16_t)mapIt->first, ueId, destinationCellid);
-        
+    // checking if msg is intended for this simulation campaign/plmn
+    std::string plmnId = controlMessage->m_plmnString;
+    if(plmnId.compare(m_ltePlmnId)==0){
+      NS_LOG_DEBUG("Received control message for this simulation branch with plmnid " << plmnId);
+      std::map<long, std::map<long, long>> resultMap = controlMessage->m_allHandoverList;
+      NS_LOG_DEBUG("The map size " << resultMap.size());
+      // NS_LOG_DEBUG(resultMap);
+      // create a function to actuate the handover action
+      // auto mapIt = resultMap.find((long)m_cellId);
+      for (std::map<long, std::map<long, long>>::iterator mapIt = resultMap.begin(); 
+        mapIt!=resultMap.end(); ++mapIt){
+        for(std::map<long,long>::iterator singleUser = mapIt->second.begin(); singleUser!=mapIt->second.end(); ++singleUser){
+          uint64_t ueId = (uint64_t) singleUser->first;
+          uint16_t relayRnti = (uint16_t) singleUser->second;
+            NS_LOG_INFO("User id " << ueId << " has to be moved to cell id " << relayRnti);
+            // Simulator::ScheduleWithContext(1, Seconds(0), 
+            //   &MmWaveEnbNetDevice::AddToDoHandoverTrace, this, (uint16_t)mapIt->first, ueId, relayRnti);
+            Simulator::ScheduleWithContext(1, Seconds(0), 
+              &MmWaveEnbNetDevice::AddToDoHandoverTrace, this, ueId, (uint16_t)mapIt->first, relayRnti);
+          
+        }
       }
     }
-    // if(mapIt != resultMap.end()){
-    // }
   }
 }
 
@@ -1044,6 +1135,26 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageCuCp(std::string plmId)
     }
 }
 
+void
+MmWaveEnbNetDevice::TestMessageCreation(){
+  NS_LOG_FUNCTION(this);
+  // m_l3sinrMillicarMap.clear();
+  // m_pairsSinrMillicarMap.clear();
+  m_l3sinrMillicarMap[34][38].sinr = 24.0175;
+  m_l3sinrMillicarMap[34][38].mcs = 14; 
+  m_pairsSinrMillicarMap[34][35].sinr = 2.72881e+09;
+  m_pairsSinrMillicarMap[34][37].sinr = 2.68668e+09;
+  m_pairsSinrMillicarMap[34][33].sinr = 2.42591e+09;
+  m_pairsSinrMillicarMap[34][40].sinr = 1.62011e+09;
+  // m_pairsSinrMillicarMap[34][39].sinr = 1.08529e+09;
+  // m_pairsSinrMillicarMap[34][38].sinr = 7.22305e+08;
+  // m_pairsSinrMillicarMap[34][36].sinr = 1.72463e+08;
+  Ptr<KpmIndicationMessage> _msg = BuildMillicarReportRicIndicationMessageCucp(m_ltePlmnId, 34, 48);
+  NS_LOG_DEBUG("Finish");
+  m_l3sinrMillicarMap.clear();
+  m_pairsSinrMillicarMap.clear();
+}
+
 
 Ptr<KpmIndicationMessage>
 MmWaveEnbNetDevice::BuildMillicarReportRicIndicationMessageCucp(std::string plmId, uint16_t generatingNodeRnti, uint16_t numReports)
@@ -1072,11 +1183,11 @@ MmWaveEnbNetDevice::BuildMillicarReportRicIndicationMessageCucp(std::string plmI
     if(firstOrderAssignIt!= m_l3sinrMillicarMap.end()){
       // we might have multiple users a peer is communicating, thus we need to go through them
       std::multimap<SinrMcsPair, uint16_t> sortFlipMap = flip_map (firstOrderAssignIt->second); // SinrMcsPairCmp
-      // uint16_t nNeighbours = E2SM_REPORT_MAX_NEIGH;
-       uint16_t nNeighbours = 1;
+      uint16_t nNeighbours = E2SM_REPORT_MAX_NEIGH;
+      //  uint16_t nNeighbours = 1;
       if (firstOrderAssignIt->second.size () < nNeighbours)
       {
-        nNeighbours = firstOrderAssignIt->second.size () - 1;
+        nNeighbours = firstOrderAssignIt->second.size () ;
       }
       uint16_t itIndex = 0;
       bool _sinrDataExist = false;
@@ -1088,23 +1199,29 @@ MmWaveEnbNetDevice::BuildMillicarReportRicIndicationMessageCucp(std::string plmI
       
         _sinrDataExist = sortFlipMap.size() >0;
 
-        NS_LOG_DEBUG("Size of nNeighbours " << nNeighbours << " size of flip " << sortFlipMap.size());
+        // NS_LOG_DEBUG("Size of nNeighbours " << nNeighbours << " size of flip " << sortFlipMap.size());
         for (std::multimap<SinrMcsPair, uint16_t>::iterator it = sortFlipMap.begin ();
             (it != sortFlipMap.end ()) && (itIndex < nNeighbours); it++)
         {
-          NS_LOG_DEBUG("Entering the loop to write individual reporst");
+          // NS_LOG_DEBUG("Entering the loop to write individual reporst");
           
           NS_LOG_DEBUG("Adding Peer device with rnti " << it->second << " sinr " << it->first.sinr
           << " and mcs " << (uint32_t)it->first.mcs);
           double sinrThisCell = 10 * std::log10 (it->first.sinr);
           double convertedSinr = L3RrcMeasurements::ThreeGppMapSinr (sinrThisCell);
-          servingCellMeasurements->AddMeasResultServMo (L3RrcMeasurements::CreateActivePeerDeviceSinrMcs(it->second, convertedSinr,it->first.mcs)->GetPointer());
+          // Ptr<MeasResultServMo> measResultServMo = L3RrcMeasurements::CreateActivePeerDeviceSinrMcs((long)it->second, 
+          //                                               (long)convertedSinr, it->first.mcs);
+          // servingCellMeasurements->AddMeasResultServMo (measResultServMo->GetPointer());
+          // l3RrcMeasurementServing->AddActivePeerDeviceSinrMcs(servingCellMeasurements, (long)it->second, 
+          //                                               (long)convertedSinr,it->first.mcs);
+          l3RrcMeasurementServing->AddNeighbourCellMeasurementMcs((long)it->second, (long)convertedSinr,it->first.mcs);
+          // l3RrcMeasurementServing->AddNeighbourCellMeasurementMcs((long)it->second, (long)convertedSinr,it->first.mcs);
           _sinrDataExist =true;
           itIndex++;
         }
 
         if(_sinrDataExist){
-          l3RrcMeasurementServing->AddServingCellMeasurement (servingCellMeasurements->GetPointer ());
+          // l3RrcMeasurementServing->AddServingCellMeasurement (servingCellMeasurements->GetPointer ());
         }
       }
       
@@ -1133,19 +1250,24 @@ MmWaveEnbNetDevice::BuildMillicarReportRicIndicationMessageCucp(std::string plmI
         {
           if (!indicationMessageHelper->IsOffline ())
           {
+            if (!std::isnan(it->first.sinr)){
+              double sinrPeer = 10 * std::log10 (it->first.sinr); // we do it to scale the measured data
+              double convertedSinrPeer = L3RrcMeasurements::ThreeGppMapSinr (sinrPeer);
+              NS_LOG_DEBUG("Rnti " << it->second << " sinr real " << it->first.sinr
+              << " sinr peer " << sinrPeer <<  
+              " converted sinr " << convertedSinrPeer << " & mcs " << +it->first.mcs);
+              l3RrcMeasurementNeigh->AddNeighbourCellMeasurementMcs (it->second, convertedSinrPeer, it->first.mcs);
+          
+            }
             
-            double sinrPeer = 10 * std::log10 (it->first.sinr);
-            double convertedSinrPeer = L3RrcMeasurements::ThreeGppMapSinr (sinrPeer);
-            NS_LOG_DEBUG("Rnti " << it->second << " converted sinr " << convertedSinrPeer << " & mcs " << +it->first.mcs);
-            l3RrcMeasurementNeigh->AddNeighbourCellMeasurementMcs (it->second, convertedSinrPeer, it->first.mcs);
           }
           itIndex++;
         }
     }
     if (!indicationMessageHelper->IsOffline ()){
       // indicationMessageHelper->AddCuCpUePmItem (ueImsiComplete, generatingNodeRnti, l3RrcMeasurementNeigh);
-      indicationMessageHelper->AddCuCpUePmItem (ueImsiComplete, generatingNodeRnti, positionX, 
-                                                positionY, l3RrcMeasurementServing, l3RrcMeasurementNeigh);
+      indicationMessageHelper->AddCuCpUePmItem (ueImsiComplete, (long)generatingNodeRnti, (long)positionX, 
+                                                (long)positionY, l3RrcMeasurementServing, l3RrcMeasurementNeigh);
     }
 
     if (!indicationMessageHelper->IsOffline ())
@@ -1549,15 +1671,17 @@ MmWaveEnbNetDevice::BuildRicIndicationMessageDu(std::string plmId, uint16_t nrCe
 
 void 
 MmWaveEnbNetDevice::AddMillicarDevice(uint16_t millicarRnti, Ptr<MmWaveUeNetDevice> ueNetDevice){
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION(this << "rnti" << millicarRnti << "cellid" << m_cellId);
   m_millicarDevicesMap[millicarRnti] = ueNetDevice;
+  NS_LOG_DEBUG("Size " << m_millicarDevicesMap.size());
 }
 
 void
 MmWaveEnbNetDevice::BuildAndSendMillicarReportMessage(E2Termination::RicSubscriptionRequest_rval_s params)
 {
   NS_LOG_FUNCTION(this);
-  std::string plmId = "111";
+  // std::string plmId = "111";
+  std::string plmId = m_ltePlmnId;
   std::string gnbId = std::to_string(m_cellId);
 
   // TODO here we can get something from RRC and onward
@@ -1573,7 +1697,7 @@ MmWaveEnbNetDevice::BuildAndSendMillicarReportMessage(E2Termination::RicSubscrip
     // create message for all the nodes in the list
     NS_LOG_DEBUG("Number of device " << m_millicarDevicesMap.size());
     for (std::map<uint16_t, Ptr<MmWaveUeNetDevice>>::iterator ueNetDevIt = m_millicarDevicesMap.begin();
-    ueNetDevIt != m_millicarDevicesMap.end(); ++ ueNetDevIt){
+        ueNetDevIt != m_millicarDevicesMap.end(); ++ ueNetDevIt){
       // for each of the millicar devices we sent a report; in case the device is not active we sent only the position
 
     // for (std::map<uint16_t, std::map<uint16_t, SinrMcsPair>>::iterator ueReportIt = m_l3sinrMillicarMap.begin();

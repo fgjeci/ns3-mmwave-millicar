@@ -114,7 +114,7 @@ MmWaveEnbPhy::GetTypeId(void)
                 MakeBooleanChecker())
             .AddAttribute("UpdateSinrEstimatePeriod",
                           "Period (in microseconds) of update of SINR estimate of all the UE",
-                          IntegerValue(1600), // TODO considering refactoring in MmWavePhyMacCommon
+                          IntegerValue(16000), // TODO considering refactoring in MmWavePhyMacCommon
                           MakeIntegerAccessor(&MmWaveEnbPhy::m_updateSinrPeriod),
                           MakeIntegerChecker<int>())
             .AddAttribute("UpdateUeSinrEstimatePeriod",

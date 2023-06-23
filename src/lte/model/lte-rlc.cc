@@ -135,7 +135,16 @@ LteRlc::GetTypeId(void)
                             .AddTraceSource("TxCompletedCallback",
                                             "PDU acked.",
                                             MakeTraceSourceAccessor(&LteRlc::m_txCompletedCallback),
-                                            "ns3::LteRlc::RetransmissionCountCallback");
+                                            "ns3::LteRlc::RetransmissionCountCallback")
+                            // modified
+                            // add trace to capture the buffer occupation
+                            .AddTraceSource ("BufferSize",
+                                            "Trace source indicating rlc buffer size ",
+                                            MakeTraceSourceAccessor (&LteRlc::m_rlcBufferSize),
+                                            "ns3::Packet::BufferSizeTracedCallback")
+                            // end modification                
+                            
+                            ;
     return tid;
 }
 

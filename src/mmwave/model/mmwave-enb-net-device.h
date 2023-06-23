@@ -123,6 +123,7 @@ public:
   {
       double sinr; ///< RNTI
       uint8_t mcs = 0; ///< DRBID
+      uint32_t number_of_samples = 0;
       double positionX;
       double positionY;
 
@@ -153,7 +154,10 @@ public:
 
   void DoHandoverTrace (E2AP_PDU_t* pdu);
 
-  void AddToDoHandoverTrace(uint16_t sourceCellId, uint64_t imsi, uint16_t destinationCellId);
+  // void AddToDoHandoverTrace(uint16_t sourceRnti, uint64_t imsi, uint16_t destinationRnti);
+  void AddToDoHandoverTrace(uint16_t destinationRnti, uint64_t sourceRnti, uint16_t relayRnti);
+
+  void TestMessageCreation();
 
   static void RegisterSlSinrReportReadingCallback(Ptr<MmWaveEnbNetDevice> netDev, std::string context, uint16_t localRnti, uint16_t destRnti, uint8_t numSym, uint32_t tbSize, double avgSinr); // , double positionX, double positionY
 
@@ -216,7 +220,7 @@ private:
   // modified
   Ptr<KpmIndicationMessage> BuildMillicarReportRicIndicationMessageCucp(std::string plmId, uint16_t generatingNodeRnti, uint16_t numReports);
   
-  
+  std::string m_ricControlReceivedFilename;
   // end modification
 
   bool m_sendCuUp;
@@ -234,6 +238,7 @@ private:
 
   uint16_t m_basicCellId; 
 
+
   bool m_forceE2FileLogging; //< if true log PMs to files
   std::string m_cuUpFileName;
   std::string m_cuCpFileName;
@@ -243,7 +248,10 @@ private:
 
   std::map<uint16_t, Ptr<MmWaveUeNetDevice>> m_millicarDevicesMap;
 
-  
+  // modified
+  std::string m_tracesPath;
+  std::string m_ltePlmnId;
+  // end modification
 
 };
 }

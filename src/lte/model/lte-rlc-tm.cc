@@ -91,6 +91,10 @@ LteRlcTm::DoTransmitPdcpPdu(Ptr<Packet> p)
         NS_LOG_LOGIC("Tx Buffer: New packet added");
         m_txBuffer.push_back(p);
         m_txBufferSize += p->GetSize();
+        // modified 
+        // add data to trace
+        m_rlcBufferSize(m_txBufferSize, m_maxTxBufferSize);
+        // end modification
         NS_LOG_LOGIC("NumOfBuffers = " << m_txBuffer.size());
         NS_LOG_LOGIC("txBufferSize = " << m_txBufferSize);
     }
@@ -146,6 +150,10 @@ LteRlcTm::DoNotifyTxOpportunity(LteMacSapUser::TxOpportunityParameters txOpParam
     }
 
     m_txBufferSize -= (*(m_txBuffer.begin()))->GetSize();
+    // modified 
+    // add data to trace
+    m_rlcBufferSize(m_txBufferSize, m_maxTxBufferSize);
+    // end modification
     m_txBuffer.erase(m_txBuffer.begin());
 
     // Sender timestamp

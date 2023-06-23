@@ -203,7 +203,7 @@ ThreeGppPropagationLossModel::GetLoss(Ptr<ChannelCondition> cond,
                                       double hUt,
                                       double hBs) const
 {
-    NS_LOG_FUNCTION(this);
+    NS_LOG_FUNCTION(this << cond->GetLosCondition());
 
     double loss = 0;
     if (cond->GetLosCondition() == ChannelCondition::LosConditionValue::LOS)
