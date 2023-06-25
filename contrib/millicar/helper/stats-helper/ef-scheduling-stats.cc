@@ -52,8 +52,8 @@ DlSchedulingStats::SetDb (SQLiteOutput *db, const std::string & tableName)
                         "NumSym INTEGER NOT NULL,"
                         "mcs INTEGER NOT NULL,"
                         "tbsize INTEGER NOT NULL,"
-                        // "Seed INTEGER NOT NULL,"
-                        // "Run INTEGER NOT NULL,"
+                        "Seed INTEGER NOT NULL,"
+                        "Run INTEGER NOT NULL,"
                         "TimeStamp DOUBLE NOT NULL);");
 //                        "Run INTEGER NOT NULL);");
   NS_ASSERT (ret);
@@ -84,7 +84,7 @@ DlSchedulingStats::SaveDlSchedulingStats (uint16_t frame, uint8_t subframe,
   m_dlSchedulingCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_dlSchedulingCache.size () * sizeof (DlSchedulingCache) > 1000000)
+  if (m_dlSchedulingCache.size () * sizeof (DlSchedulingCache) > 100000)
     {
       WriteCache ();
     }
@@ -118,7 +118,7 @@ void DlSchedulingStats::WriteCache ()
   for (const auto & v : m_dlSchedulingCache)
     {
       sqlite3_stmt *stmt;
-      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?);");
+      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?);");
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 1, static_cast<uint32_t> (v.frame));
       NS_ASSERT (ret);
@@ -136,14 +136,14 @@ void DlSchedulingStats::WriteCache ()
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 8, static_cast<uint32_t> (v.tbSize));
       NS_ASSERT (ret);
-      // ret = m_db->Bind (stmt, 9, RngSeedManager::GetSeed ());
-      // NS_ASSERT (ret);
-      // ret = m_db->Bind (stmt, 10, static_cast<uint32_t> (RngSeedManager::GetRun ()));
-      // NS_ASSERT (ret);
+      ret = m_db->Bind (stmt, 9, RngSeedManager::GetSeed ());
+      NS_ASSERT (ret);
+      ret = m_db->Bind (stmt, 10, static_cast<uint32_t> (RngSeedManager::GetRun ()));
+      NS_ASSERT (ret);
       // ret = m_db->Bind (stmt, 10, static_cast<uint32_t> (MpiInterface::GetSystemId ()));
       // NS_ASSERT (ret);
       // insert the timestamp
-      ret = m_db->Bind (stmt, 9, v.timeInstance.GetSeconds());
+      ret = m_db->Bind (stmt, 11, v.timeInstance.GetSeconds());
       NS_ASSERT (ret);
       ret = m_db->SpinExec (stmt);
       NS_ASSERT (ret);

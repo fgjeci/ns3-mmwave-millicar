@@ -47,7 +47,7 @@ SendPacketStats::SetDb (SQLiteOutput *db, const std::string & tableName)
   // NS_ASSERT (ret);"entity VARCHAR(30) NOT NULL,"
 
   ret = m_db->SpinExec ("CREATE TABLE IF NOT EXISTS " + tableName + "(" +
-					    "SourceRnti INTEGER NOT NULL,"
+					              "SourceRnti INTEGER NOT NULL,"
                         "DestRnti INTEGER NOT NULL,"
                         "InterRnti INTEGER NOT NULL,"
                         "localRnti INTEGER NOT NULL,"
@@ -61,9 +61,9 @@ SendPacketStats::SetDb (SQLiteOutput *db, const std::string & tableName)
                         "txtime DOUBLE NOT NULL,"
                         "seqNum INTEGER NOT NULL,"
                         "payloadSize INTEGER NOT NULL,"
-					  //   "Seed INTEGER NOT NULL,"
-						// "Run INTEGER NOT NULL,"
-					    "TimeStamp DOUBLE NOT NULL);");
+                        "Seed INTEGER NOT NULL,"
+                        "Run INTEGER NOT NULL,"
+                        "TimeStamp DOUBLE NOT NULL);");
 		  //                        "Run INTEGER NOT NULL);");
   NS_ASSERT (ret);
 
@@ -101,7 +101,7 @@ SendPacketStats::SavePacketSend (uint16_t sourceRnti, uint16_t intermediateRnti,
 	m_sendPacketCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 10000)
+  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000000)
     {
       WriteCache ();
     }
@@ -135,7 +135,7 @@ SendPacketStats::SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti
 	m_sendPacketCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 10000)
+  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000000)
     {
       WriteCache ();
     }
@@ -170,7 +170,7 @@ void SendPacketStats::WriteCache ()
     {
 //	  NS_LOG_UNCOND("Writing cache " << v.cellId << " " << v.rnti<< " " << v.power<< " " << v.avgSinr << " " << v.bwpId);
       sqlite3_stmt *stmt;
-      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?);");
+      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);");
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 1, v.sourceRnti);
       NS_ASSERT (ret);
@@ -189,14 +189,14 @@ void SendPacketStats::WriteCache ()
       ret = m_db->Bind (stmt, 8, v.txTime);
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 9, v.seqNumber);
-      // NS_ASSERT (ret);
-      // ret = m_db->Bind (stmt, 10, RngSeedManager::GetSeed ());
-      // NS_ASSERT (ret);
-      // ret = m_db->Bind (stmt, 11, static_cast<uint32_t> (RngSeedManager::GetRun ()));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 10, v.payloadSize);
+      ret = m_db->Bind (stmt, 10, RngSeedManager::GetSeed ());
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 11, v.timeInstance);
+      ret = m_db->Bind (stmt, 11, static_cast<uint32_t> (RngSeedManager::GetRun ()));
+      NS_ASSERT (ret);
+      ret = m_db->Bind (stmt, 12, v.payloadSize);
+      NS_ASSERT (ret);
+      ret = m_db->Bind (stmt, 13, v.timeInstance);
       
       // NS_ASSERT (ret);
       // ret = m_db->Bind (stmt, 13, v.sourceAddr); // static_cast<double> (
