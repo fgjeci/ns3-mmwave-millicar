@@ -60,9 +60,9 @@ public:
    * \param tbSize size of the transport block that generated the report in bytes
    * \param mcs the MCS of the transmission
    */
-  void McsSinrCallback(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs);
+  void McsSinrCallback(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, bool corrupt);
 
-  void McsSinrCallbackPerDevice(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, uint16_t localRnti);
+  void McsSinrCallbackPerDevice(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, bool corrupt, uint16_t localRnti);
 
   void UeRlcBufferSize (uint16_t cellId, uint64_t imsi, uint32_t bufferSize, uint32_t maxBufferSize);
 
@@ -70,14 +70,29 @@ public:
 
   void SetUeRlcBufferSizeFilename (std::string outputFilename);
 
-  void SetPhyDataFilename (std::string outputFilename);
-private:
-  std::string m_filename; //!< filename for the output
-  std::ofstream m_outputFile; //!< output file
+  void SetUeRlcTxFilename (std::string outputFilename);
 
-  std::string m_ueRlcbufferSizeOutputFilename;
-  std::ofstream m_ueRlcBufferSizeFile;
+  void SetUeRlcRxFilename (std::string outputFilename);
+
+  void SetPhyDataFilename (std::string outputFilename);
+
+  static void UeRlcRx (Ptr<MmWaveVehicularTracesHelper> helper, uint16_t rnti, uint16_t rlcRnti, uint8_t lcid, uint32_t packetSize, uint64_t delay);
+
+  static void UeRlcTx (Ptr<MmWaveVehicularTracesHelper> helper, uint16_t rnti, uint16_t rlcRnti, uint8_t lcid, uint32_t packetSize);
+
+private:
   std::string m_tracesPath;
+  std::string m_filename; //!< filename for the output
+  
+  std::ofstream m_outputFile; //!< output file
+  std::string m_ueRlcbufferSizeOutputFilename;
+  std::string m_ueRlcTxOutputFilename;
+  std::string m_ueRlcRxOutputFilename;
+  std::ofstream m_ueRlcBufferSizeFile;
+  std::ofstream m_ueRlcTxFile;
+  std::ofstream m_ueRlcRxFile;
+
+  
 
 };
 

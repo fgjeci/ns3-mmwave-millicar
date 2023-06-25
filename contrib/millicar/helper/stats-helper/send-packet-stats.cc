@@ -51,15 +51,18 @@ SendPacketStats::SetDb (SQLiteOutput *db, const std::string & tableName)
                         "DestRnti INTEGER NOT NULL,"
                         "InterRnti INTEGER NOT NULL,"
                         "localRnti INTEGER NOT NULL,"
-                        "sourceAddr VARCHAR(50) NOT NULL,"
-                        "destAddr VARCHAR(50) NOT NULL,"
-                        "x DOUBLE NOT NULL,"
-                        "y DOUBLE NOT NULL,"
+                        // "sourceAddr VARCHAR(50) NOT NULL,"
+                        // "destAddr VARCHAR(50) NOT NULL,"
+                        // "x DOUBLE NOT NULL,"
+                        // "y DOUBLE NOT NULL,"
+                        "x INTEGER NOT NULL,"
+                        "y INTEGER NOT NULL,"
                         "packetId INTEGER NOT NULL,"
                         "txtime DOUBLE NOT NULL,"
                         "seqNum INTEGER NOT NULL,"
-					    "Seed INTEGER NOT NULL,"
-						"Run INTEGER NOT NULL,"
+                        "payloadSize INTEGER NOT NULL,"
+					  //   "Seed INTEGER NOT NULL,"
+						// "Run INTEGER NOT NULL,"
 					    "TimeStamp DOUBLE NOT NULL);");
 		  //                        "Run INTEGER NOT NULL);");
   NS_ASSERT (ret);
@@ -75,7 +78,8 @@ SendPacketStats::SavePacketSend (uint16_t sourceRnti, uint16_t intermediateRnti,
                         uint16_t destinationRnti, uint16_t localRnti,
                         std::string sourceAddress, std::string destAddress
                         , Vector position
-                        ,uint64_t packetId, uint32_t seqNumber, double txTime
+                        ,uint64_t packetId, uint32_t seqNumber, double txTime,
+                        uint16_t payloadSize
                         )
 {
 //	NS_UNUSED (power);
@@ -92,6 +96,7 @@ SendPacketStats::SavePacketSend (uint16_t sourceRnti, uint16_t intermediateRnti,
     c.seqNumber = seqNumber;
     c.txTime = txTime;
     c.position = position;
+    c.payloadSize = payloadSize;
 
 	m_sendPacketCache.emplace_back (c);
 
@@ -107,7 +112,8 @@ SendPacketStats::SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti
                         uint16_t destinationRnti, uint16_t localRnti, 
                         std::string sourceAddress, std::string destAddress
                         , Vector position
-                        ,uint64_t packetId, uint32_t seqNumber, double txTime
+                        ,uint64_t packetId, uint32_t seqNumber, double txTime,
+                        uint16_t payloadSize
                         )
 {
 //	NS_UNUSED (power);
@@ -116,14 +122,15 @@ SendPacketStats::SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti
 	c.timeInstance = Simulator::Now();
 	c.sourceRnti = sourceRnti;
 	c.intermediateRnti = intermediateRnti;
-    c.destRnti = destinationRnti;
-    c.localRnti = localRnti;
-    c.destAddr = destAddress;
-    c.sourceAddr = sourceAddress;
-    c.packetId = packetId;
-    c.seqNumber = seqNumber;
-    c.txTime = txTime;
-    c.position = position;
+  c.destRnti = destinationRnti;
+  c.localRnti = localRnti;
+  c.destAddr = destAddress;
+  c.sourceAddr = sourceAddress;
+  c.packetId = packetId;
+  c.seqNumber = seqNumber;
+  c.txTime = txTime;
+  c.position = position;
+  c.payloadSize = payloadSize;
 
 	m_sendPacketCache.emplace_back (c);
 
@@ -163,7 +170,7 @@ void SendPacketStats::WriteCache ()
     {
 //	  NS_LOG_UNCOND("Writing cache " << v.cellId << " " << v.rnti<< " " << v.power<< " " << v.avgSinr << " " << v.bwpId);
       sqlite3_stmt *stmt;
-      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?);");
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 1, v.sourceRnti);
       NS_ASSERT (ret);
@@ -173,25 +180,28 @@ void SendPacketStats::WriteCache ()
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 4, static_cast<uint32_t>(v.localRnti));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 5, v.sourceAddr); // static_cast<double> (
+      ret = m_db->Bind (stmt, 5, static_cast<uint32_t>(v.position.x));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 6, v.destAddr);
+      ret = m_db->Bind (stmt, 6, static_cast<uint32_t>(v.position.y));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 7, v.position.x);
+      ret = m_db->Bind (stmt, 7, static_cast<uint32_t>(v.packetId));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 8, v.position.y);
+      ret = m_db->Bind (stmt, 8, v.txTime);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 9, static_cast<uint32_t>(v.packetId));
+      ret = m_db->Bind (stmt, 9, v.seqNumber);
+      // NS_ASSERT (ret);
+      // ret = m_db->Bind (stmt, 10, RngSeedManager::GetSeed ());
+      // NS_ASSERT (ret);
+      // ret = m_db->Bind (stmt, 11, static_cast<uint32_t> (RngSeedManager::GetRun ()));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 10, v.txTime);
+      ret = m_db->Bind (stmt, 10, v.payloadSize);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 11, v.seqNumber);
-      NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 12, RngSeedManager::GetSeed ());
-      NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 13, static_cast<uint32_t> (RngSeedManager::GetRun ()));
-      NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 14, v.timeInstance);
+      ret = m_db->Bind (stmt, 11, v.timeInstance);
+      
+      // NS_ASSERT (ret);
+      // ret = m_db->Bind (stmt, 13, v.sourceAddr); // static_cast<double> (
+      // NS_ASSERT (ret);
+      // ret = m_db->Bind (stmt, 14, v.destAddr);
       NS_ASSERT (ret);
       // ret = m_db->Bind (stmt, 7, static_cast<uint32_t> (MpiInterface::GetSystemId ()));
       // NS_ASSERT (ret);

@@ -74,7 +74,16 @@ MmWaveVehicularTracesHelper::GetTypeId (void)
                    StringValue ("sinr-mcs.txt"),
                    MakeStringAccessor (&MmWaveVehicularTracesHelper::SetPhyDataFilename),
                    MakeStringChecker ())
-                            
+    .AddAttribute ("UeRlcRxOutputFilename",
+                   "Name of the file where the ue rlc tx buffer.",
+                   StringValue ("UeRlcRxSizeStats.txt"),
+                   MakeStringAccessor (&MmWaveVehicularTracesHelper::SetUeRlcRxFilename),
+                   MakeStringChecker ())
+    .AddAttribute ("UeRlcTxOutputFilename",
+                   "Name of the file where the ue rlc rx buffer.",
+                   StringValue ("UeRlcTxStats.txt"),
+                   MakeStringAccessor (&MmWaveVehicularTracesHelper::SetUeRlcTxFilename),
+                   MakeStringChecker ())
     // end modification
   ;
   return tid;
@@ -92,10 +101,20 @@ MmWaveVehicularTracesHelper::~MmWaveVehicularTracesHelper ()
     {
       m_ueRlcBufferSizeFile.close ();
     }
+
+  if (m_ueRlcTxFile.is_open ())
+  {
+    m_ueRlcTxFile.close ();
+  }
+
+  if (m_ueRlcRxFile.is_open ())
+  {
+    m_ueRlcRxFile.close ();
+  }
 }
 
 void
-MmWaveVehicularTracesHelper::McsSinrCallback(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs)
+MmWaveVehicularTracesHelper::McsSinrCallback(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, bool corrupt)
 {
   if(!m_outputFile.is_open())
   {
@@ -104,16 +123,17 @@ MmWaveVehicularTracesHelper::McsSinrCallback(const SpectrumValue& sinr, uint16_t
     {
       NS_FATAL_ERROR ("Could not open tracefile");
     }
-    m_outputFile
-            << "time\trnti\tsinr\tnumsym\ttbsize\tmcs\tlocalRnti\n";
+    m_outputFile<< "time\trnti\tsinr\tnumsym\ttbsize\tmcs\tcorrupt\n";
   }
 
   double sinrAvg = Sum (sinr) / (sinr.GetSpectrumModel ()->GetNumBands ());
-  m_outputFile << Simulator::Now().GetSeconds() << "\t" << rnti << "\t" << 10 * std::log10 (sinrAvg) << "\t" << (uint32_t)numSym << "\t" << tbSize << "\t" << (uint32_t)mcs << std::endl;
+  m_outputFile << Simulator::Now().GetSeconds() << "\t" << rnti << "\t" 
+  << 10 * std::log10 (sinrAvg) << "\t" << (uint32_t)numSym << "\t" 
+  << tbSize << "\t" << (uint32_t)mcs << "\t" << (uint32_t)corrupt << std::endl;
 }
 
 void
-MmWaveVehicularTracesHelper::McsSinrCallbackPerDevice(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, uint16_t localRnti)
+MmWaveVehicularTracesHelper::McsSinrCallbackPerDevice(const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, bool corrupt, uint16_t localRnti)
 {
   double sinrAvg = Sum (sinr) / (sinr.GetSpectrumModel ()->GetNumBands ());
 
@@ -135,6 +155,30 @@ MmWaveVehicularTracesHelper::SetUeRlcBufferSizeFilename (std::string outputFilen
 }
 
 void
+MmWaveVehicularTracesHelper::SetUeRlcTxFilename (std::string outputFilename)
+{
+  NS_LOG_FUNCTION (this << outputFilename<< m_tracesPath);
+  m_ueRlcTxOutputFilename = outputFilename;
+  if (m_ueRlcTxOutputFilename.find("/", 0) != std::string::npos){
+      m_ueRlcTxOutputFilename = outputFilename;
+  }else{
+    m_ueRlcTxOutputFilename = m_tracesPath+outputFilename;
+  }
+}
+
+void
+MmWaveVehicularTracesHelper::SetUeRlcRxFilename (std::string outputFilename)
+{
+  NS_LOG_FUNCTION (this << outputFilename<< m_tracesPath);
+  m_ueRlcRxOutputFilename = outputFilename;
+  if (m_ueRlcRxOutputFilename.find("/", 0) != std::string::npos){
+      m_ueRlcRxOutputFilename = outputFilename;
+  }else{
+    m_ueRlcRxOutputFilename = m_tracesPath+outputFilename;
+  }
+}
+
+void
 MmWaveVehicularTracesHelper::SetPhyDataFilename (std::string outputFilename)
 {
   NS_LOG_FUNCTION (this << outputFilename<< m_tracesPath);
@@ -146,7 +190,6 @@ MmWaveVehicularTracesHelper::SetPhyDataFilename (std::string outputFilename)
   }
 }
 
-// millicar::MmWaveVehicularTracesHelper
 void
 MmWaveVehicularTracesHelper::UeRlcBufferSize (uint16_t rnti, uint64_t imsi, uint32_t bufferSize, uint32_t maxBufferSize)
 {
@@ -174,6 +217,35 @@ MmWaveVehicularTracesHelper::UeRlcBufferSizeShort (Ptr<MmWaveVehicularTracesHelp
   // std::cout << "File opened " << std::endl;
   helper->m_ueRlcBufferSizeFile << rnti << " " << bufferSize << " " << maxBufferSize << " " << Simulator::Now ().GetSeconds() << std::endl;
 }
+
+void
+MmWaveVehicularTracesHelper::UeRlcRx (Ptr<MmWaveVehicularTracesHelper> helper, uint16_t rnti, uint16_t rlcRnti, uint8_t lcid, uint32_t packetSize, uint64_t delay)
+{
+  // std::cout << " rnti " << rnti << " buff size "  << bufferSize << " max size " << maxBufferSize << std::endl;
+  
+  if (!helper->m_ueRlcRxFile.is_open ())
+    {
+      // std::cout << " File not opened so we open it" << std::endl;
+      helper->m_ueRlcRxFile.open (helper->m_ueRlcRxOutputFilename.c_str ()); // , std::ios_base::app
+      helper->m_ueRlcRxFile << "rnti"  <<  " " << "lcid"<< " "<< "packetSize"<< " "<< "delay"<< " " << "Timestamp" << std::endl;
+    }
+  // std::cout << "File opened " << std::endl;
+  helper->m_ueRlcRxFile << rnti << " "<< static_cast<uint32_t>(lcid) << " " << packetSize << " " << delay << " " << Simulator::Now ().GetSeconds() << std::endl;
+}
+
+void
+MmWaveVehicularTracesHelper::UeRlcTx (Ptr<MmWaveVehicularTracesHelper> helper, uint16_t rnti, uint16_t rlcRnti, uint8_t lcid, uint32_t packetSize)
+{
+  if (!helper->m_ueRlcTxFile.is_open ())
+    {
+      // std::cout << " File not opened so we open it" << std::endl;
+      helper->m_ueRlcTxFile.open (helper->m_ueRlcTxOutputFilename.c_str ()); // , std::ios_base::app
+      helper->m_ueRlcTxFile << "rnti"  <<  " " << "lcid"<< " "<< "packetSize"<< " " << "Timestamp" << std::endl;
+    }
+  // std::cout << "File opened " << std::endl;
+  helper->m_ueRlcTxFile << rnti << " "<< static_cast<uint32_t>(lcid) << " " << packetSize << " "  << Simulator::Now ().GetSeconds() << std::endl;
+}
+
 
 // end modification
 

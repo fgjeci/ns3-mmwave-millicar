@@ -16,19 +16,20 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-#ifndef SEND_PACKET_STATS_H
-#define SEND_PACKET_STATS_H
+#ifndef DL_SCHEDULING_STATS_H
+#define DL_SCHEDULING_STATS_H
 
 #include <inttypes.h>
 #include <vector>
-#include <ns3/network-module.h>
 
 #include <ns3/sqlite-output.h>
+#include <ns3/mmwave-phy-mac-common.h>
 
 #include <ns3/core-module.h>
 
 namespace ns3 {
 namespace mmwave {
+
 /**
  * \brief Class to collect and store the SINR values obtained from a simulation
  *
@@ -40,13 +41,13 @@ namespace mmwave {
  * \see SaveSinr
  * \see EmptyCache
  */
-class SendPacketStats
+class DlSchedulingStats
 {
 public:
   /**
    * \brief Constructor
    */
-  SendPacketStats ();
+  DlSchedulingStats ();
 
   /**
    * \brief Install the output dabase.
@@ -57,39 +58,36 @@ public:
    * method creates, if not exists, a table for storing the values. The table
    * will contain the following columns:
    *
+   * - "(Frame INTEGER NOT NULL, "
+   * - "SubFrame INTEGER NOT NULL,"
+   * - "Slot INTEGER NOT NULL,"
+   * - "CellId INTEGER NOT NULL,"
+   * - "TbSize INTEGER NOT NULL,"
+   * - "Mcs INTEGER NOT NULL,"
+   * - "Rnti INTEGER NOT NULL,"
+   * - "BwpId INTEGER NOT NULL,"
+   * - "Seed INTEGER NOT NULL,"
+   * - "Run INTEGER NOT NULL);"
    *
    * Please note that this method, if the db already contains a table with
    * the same name, also clean existing values that has the same
    * Seed/Run pair.
    */
-  void SetDb (SQLiteOutput *db, const std::string& tableName = "sendPacketStats");
+  void SetDb (SQLiteOutput *db, const std::string& tableName = "dlSchedulingStats");
 
   /**
-   * \brief Store the SINR values
-   * \param cellId Cell ID
-   * \param rnti RNTI
-   * \param power power (unused)
-   * \param avgSinr Average SINR
-   * \param bwpId BWP ID
-   *
-   * The method saves the result in a cache, and if it is necessary, writes the
-   * cache to disk before emptying it.
+   * \brief Save the slot statistics
+   * \param [in] sfnSf Slot number
+   * \param [in] TbSize Transport block size
+   * \param [in] Mcs Modulation & Coding Scheme
+   * \param [in] Rnti rnti
+   * \param [in] bwpId BWP ID
+   * \param [in] cellId Cell ID
    */
-    void SavePacketSend (uint16_t sourceRnti, uint16_t intermediateRnti, 
-                        uint16_t destinationRnti, uint16_t localRnti, 
-                        std::string sourceAddress, std::string destAddress
-                        , Vector position
-                        ,uint64_t packetId, uint32_t seqNumber, double txTime,
-                        uint16_t payloadSize
-                        );
-    
-    void SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti, 
-                        uint16_t destinationRnti, uint16_t localRnti, 
-                        std::string sourceAddress, std::string destAddress
-                        , Vector position
-                        ,uint64_t packetId, uint32_t seqNumber, double txTime,
-                        uint16_t payloadSize
-                        );
+  void SaveDlSchedulingStats (uint16_t frame, uint8_t subframe, 
+                                      uint8_t slot, uint16_t rnti, 
+                                      uint8_t symStart, uint8_t numSym,
+                                      uint8_t mcs, uint16_t tbSize);
 
   /**
    * \brief Force the cache write to disk, emptying the cache itself.
@@ -102,29 +100,26 @@ private:
 
   void WriteCache ();
 
-  struct SendPacketCache
+  struct DlSchedulingCache
   {
+    uint32_t frame;
+    uint8_t subframe;
+    uint8_t slot;
+    uint16_t rnti;
+    uint8_t symStart;
+    uint8_t numSym;
+    uint8_t mcs;
+    uint16_t tbSize;
 
+    //    uint64_t timeInstance;
     Time timeInstance;
-    uint16_t sourceRnti{UINT16_MAX};
-    uint16_t intermediateRnti{UINT16_MAX};
-    uint16_t destRnti{UINT16_MAX};
-    uint16_t localRnti{UINT16_MAX};
-    std::string sourceAddr;
-    std::string destAddr;
-    uint64_t packetId;
-    uint32_t seqNumber; 
-    double txTime;
-    Vector position;
-    uint16_t payloadSize;
-
   };
 
   SQLiteOutput *m_db;                         //!< DB pointer
-  std::vector<SendPacketCache> m_sendPacketCache;   //!< Result cache
+  std::vector<DlSchedulingCache> m_dlSchedulingCache;         //!< Result cache
   std::string m_tableName;                    //!< Table name
 };
-}
+  }
 } // namespace ns3
 
-#endif // SEND_PACKET_STATS_H
+#endif // DL_SCHEDULING_STATS_H

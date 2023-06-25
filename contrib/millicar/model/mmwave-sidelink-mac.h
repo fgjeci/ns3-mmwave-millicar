@@ -35,18 +35,18 @@ namespace ns3 {
 namespace millicar {
 
 /// structure used for the scheduling info callback
-struct SlSchedulingCallback
-{
-  uint16_t frame; //!< frame number
-  uint8_t subframe; //!< subframe number
-  uint8_t slotNum; //!< slot number
-  uint8_t symStart; //!< index of the starting symbol
-  uint8_t numSym; //!< nummber of allocated symbols
-  uint8_t mcs; //!< the MCS for transport block
-  uint16_t tbSize; //!< the TB size in bytes
-  uint16_t txRnti; //!< the RNTI which identifies the sender
-  uint16_t rxRnti; //!< the RNTI which identifies the destination
-};
+  struct SlSchedulingCallback
+  {
+    uint16_t frame; //!< frame number
+    uint8_t subframe; //!< subframe number
+    uint8_t slotNum; //!< slot number
+    uint8_t symStart; //!< index of the starting symbol
+    uint8_t numSym; //!< nummber of allocated symbols
+    uint8_t mcs; //!< the MCS for transport block
+    uint16_t tbSize; //!< the TB size in bytes
+    uint16_t txRnti; //!< the RNTI which identifies the sender
+    uint16_t rxRnti; //!< the RNTI which identifies the destination
+  };
 
 class MmWaveSidelinkMac : public Object
 {
@@ -55,6 +55,8 @@ class MmWaveSidelinkMac : public Object
   friend class RlcSidelinkMemberMacSapProvider;
 
 public:
+
+  
   /**
    * \brief Get the type ID.
    * \return the object TypeId

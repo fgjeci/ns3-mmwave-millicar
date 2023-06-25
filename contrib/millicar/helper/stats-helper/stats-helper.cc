@@ -5,12 +5,14 @@
 #include <ns3/seq-ts-size-header.h>
 #include <ns3/udp-l4-protocol.h>
 #include <ns3/udp-header.h>
+// #include "ns3/mmwave-sidelink-mac.h"
+
 
 
 namespace ns3 {
 
 
-namespace mmwave{
+// namespace mmwave{
 
 
 NS_LOG_COMPONENT_DEFINE("EfStatsHelper");
@@ -41,21 +43,21 @@ EfStatsHelper::DoInitialize(void){
 }
 
 void
-EfStatsHelper::SinrReportCallback (SinrReportStats *stats, uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, uint32_t tbSize,  double sinr)
+EfStatsHelper::SinrReportCallback (mmwave::SinrReportStats *stats, uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, uint32_t tbSize,  double sinr)
 {
 		// NS_LOG_UNCOND("saving sinr" << sourceCellId);
   	stats->SaveSinr (sourceRnti, rnti, numSym, tbSize, sinr);
 }
 
 void
-EfStatsHelper::AllPeersSinrReportCallback (SinrReportStats *stats, uint16_t sourceRnti, uint64_t rnti,  double sinr)
+EfStatsHelper::AllPeersSinrReportCallback (mmwave::SinrReportStats *stats, uint16_t sourceRnti, uint64_t rnti,  double sinr)
 {
 		// NS_LOG_UNCOND("saving sinr" << sourceCellId);
   	stats->SaveSinr (sourceRnti, (uint16_t)rnti, 0, 0, sinr);
 }
 
 void
-EfStatsHelper::SendPacketReportCallback (SendPacketStats *stats, Ptr<Packet> p, uint16_t sourceRnti, 
+EfStatsHelper::SendPacketReportCallback (mmwave::SendPacketStats *stats, Ptr<Packet> p, uint16_t sourceRnti, 
                                         uint16_t destRnti, uint16_t intermediateRnti, uint16_t localRnti
                                         , Vector pos// ,const ns3::Address & from, const ns3::Address & to
                                         )
@@ -65,6 +67,8 @@ EfStatsHelper::SendPacketReportCallback (SendPacketStats *stats, Ptr<Packet> p, 
 
     Ipv4Header ipv4Header;
     uint32_t ipv4Size = packet->RemoveHeader(ipv4Header);
+
+    uint32_t packetSize = packet->GetSize();
 
     uint8_t protocol = ipv4Header.GetProtocol();
     uint16_t payloadSize = ipv4Header.GetPayloadSize();
@@ -104,21 +108,29 @@ EfStatsHelper::SendPacketReportCallback (SendPacketStats *stats, Ptr<Packet> p, 
       stats->SavePacketSend (sourceRnti, intermediateRnti, destRnti, localRnti,
                             sourceAddress, destAddress
                             , pos
-                            , packetId, seqNumber, txTime
+                            , packetId, seqNumber, txTime, payloadSize
                             );
 
     }
 }
 
 void
-EfStatsHelper::ReportMacBsr(MacBsrStats *macBsrStats, mmwave::SfnSf sfnSf, uint16_t cellId, mmwave::MmWaveMacSchedSapProvider::SchedDlRlcBufferReqParameters schedParams){
+EfStatsHelper::ReportMacBsr(mmwave::MacBsrStats *macBsrStats, mmwave::SfnSf sfnSf, uint16_t cellId, mmwave::MmWaveMacSchedSapProvider::SchedDlRlcBufferReqParameters schedParams){
 	macBsrStats->SaveMacBsrStats(sfnSf, cellId, schedParams.m_rnti, schedParams.m_rlcTransmissionQueueSize, 
 	schedParams.m_rlcTransmissionQueueHolDelay, schedParams.m_rlcStatusPduSize, schedParams.m_rlcRetransmissionQueueSize,
 	schedParams.m_rlcRetransmissionHolDelay, schedParams.m_logicalChannelIdentity);
 }
 
 void
-EfStatsHelper::RelayPacketReportCallback (SendPacketStats *stats, Ptr<Packet> p, uint16_t localRnti
+EfStatsHelper::ReportSchedulingInfo(mmwave::DlSchedulingStats *enbStats, millicar::SlSchedulingCallback schedParams){
+  // std::cout << "Report " << std::endl;
+  enbStats->SaveDlSchedulingStats(schedParams.frame, schedParams.subframe, schedParams.slotNum,
+        schedParams.txRnti, schedParams.symStart, schedParams.numSym,
+        schedParams.mcs, schedParams.tbSize);
+}
+
+void
+EfStatsHelper::RelayPacketReportCallback (mmwave::SendPacketStats *stats, Ptr<Packet> p, uint16_t localRnti
                                         , Vector pos// ,const ns3::Address & from, const ns3::Address & to
                                         )
 {
@@ -168,7 +180,8 @@ EfStatsHelper::RelayPacketReportCallback (SendPacketStats *stats, Ptr<Packet> p,
       stats->SavePacketRelay (sourceRnti, intermediateRnti, destinationRnti, localRnti,
                             sourceAddress, destAddress
                             , pos
-                            , packetId, seqNumber, txTime
+                            , packetId, seqNumber, txTime,
+                            payloadSize
                             );
     }
 
@@ -176,6 +189,6 @@ EfStatsHelper::RelayPacketReportCallback (SendPacketStats *stats, Ptr<Packet> p,
 }
 
 
-}
+// }
 
 }

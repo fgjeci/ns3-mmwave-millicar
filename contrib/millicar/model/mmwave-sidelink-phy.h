@@ -204,7 +204,7 @@ public:
   * \param tbSize size of the transport block that generated the report in bytes
   * \param mcs the MCS of the transmission
   */
-  void GenerateSinrReport (const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs);
+  void GenerateSinrReport (const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, bool corrupt);
 
 private:
 

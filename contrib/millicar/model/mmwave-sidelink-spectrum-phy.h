@@ -79,7 +79,7 @@ typedef Callback< void, Ptr<Packet> > MmWavePhyRxDataEndOkCallback;
 // end original
 // modified 
 // insert thisdevicernti uint16_t
-typedef Callback< void, const SpectrumValue&, uint16_t, uint8_t, uint32_t, uint8_t> MmWaveSidelinkSinrReportCallback;
+typedef Callback< void, const SpectrumValue&, uint16_t, uint8_t, uint32_t, uint8_t, bool> MmWaveSidelinkSinrReportCallback;
 // end modification
 
 

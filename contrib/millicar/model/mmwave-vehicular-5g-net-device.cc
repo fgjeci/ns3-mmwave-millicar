@@ -216,10 +216,10 @@ MmWaveMillicarUeNetDevice::GetTypeId(void)
                           MakeStringAccessor (&MmWaveMillicarUeNetDevice::m_tracesPath),
                           MakeStringChecker ())
             .AddAttribute ("PhyTraceHelperMillicar",
-                   "Trace helper for millicar",
-                   PointerValue (),
-                   MakePointerAccessor (&MmWaveMillicarUeNetDevice::m_phyTraceHelperMillicar),
-                   MakePointerChecker <millicar::MmWaveVehicularTracesHelper> ())
+                          "Trace helper for millicar",
+                          PointerValue (),
+                          MakePointerAccessor (&MmWaveMillicarUeNetDevice::m_phyTraceHelperMillicar),
+                          MakePointerChecker <millicar::MmWaveVehicularTracesHelper> ())
     ;
     return tid;
 }
@@ -664,6 +664,11 @@ MmWaveMillicarUeNetDevice::ActivateBearerMillicar(const uint8_t bearerId, const 
   NS_LOG_DEBUG("Attaching to trace " << m_phyTraceHelperMillicar);
   rlc->TraceConnectWithoutContext("BufferSize",
 											   MakeBoundCallback(&millicar::MmWaveVehicularTracesHelper::UeRlcBufferSizeShort, m_phyTraceHelperMillicar, GetRnti()));
+  rlc->TraceConnectWithoutContext("RxPDU",
+											   MakeBoundCallback(&millicar::MmWaveVehicularTracesHelper::UeRlcRx, m_phyTraceHelperMillicar, GetRnti()));
+  rlc->TraceConnectWithoutContext("TxPDU",
+											   MakeBoundCallback(&millicar::MmWaveVehicularTracesHelper::UeRlcTx, m_phyTraceHelperMillicar, GetRnti()));
+  
   // end modification
 
   rlc->SetLteMacSapProvider (m_macMillicar->GetMacSapProvider());

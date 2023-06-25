@@ -266,7 +266,7 @@ void
 ParametersConfig::RxUdpVideo (Ptr<OutputStreamWrapper> stream, Ptr<ns3::Node> node, Ptr<Ipv4> ipv4, 
 		Ptr<const Packet> p, const ns3::Address & from, const ns3::Address & to)
 {
-	std::cout << "Rx RxUdpVideo " << std::endl;
+	// std::cout << "Rx RxUdpVideo " << std::endl;
 	uint16_t rnti = 0;
 	uint32_t nodeId  = node->GetId();
 	uint32_t _intIndex = 0;
@@ -390,7 +390,7 @@ ParametersConfig::EnableTraces()
 	// LogComponentEnable ("EpcX2", LOG_LEVEL_ALL);
 	// LogComponentEnable("LteEnbRrc", LOG_LEVEL_ALL);
 	// LogComponentEnable("LteUeRrc", logLevel);
-	LogComponentEnable ("MmWaveMillicarHelper", LOG_LEVEL_ALL);
+	// LogComponentEnable ("MmWaveMillicarHelper", LOG_LEVEL_ALL);
   	// LogComponentEnable ("MmWaveMillicarUeNetDevice", LOG_LEVEL_ALL);
 	// LogComponentEnable ("MmWaveSidelinkMac", LOG_LEVEL_ALL);
 	// LogComponentEnable ("MmWaveSidelinkPhy", LOG_LEVEL_ALL);

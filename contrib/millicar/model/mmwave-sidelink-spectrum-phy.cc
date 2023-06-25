@@ -424,7 +424,10 @@ MmWaveSidelinkSpectrumPhy::EndRxData ()
                                                                                      (*i).mcs, 
                                                                                      harqInfoList);
 
-       // trigger callbacks
+
+       bool corrupt = m_random->GetValue () > tbStats->m_tbler ? false : true;
+
+      // trigger callbacks
        for (auto& it : m_slSinrReportCallback)
         {
           // get rnti 
@@ -438,11 +441,10 @@ MmWaveSidelinkSpectrumPhy::EndRxData ()
           //   thisDeviceRnti = gVehicularDevice->GetMacMillicar()->GetRnti();
           // }
 
-          it(m_sinrPerceived, (*i).rnti, (*i).numSym, (*i).size, (*i).mcs); // TODO also export corrupt and tbler)
+          it(m_sinrPerceived, (*i).rnti, (*i).numSym, (*i).size, (*i).mcs, corrupt); // TODO also export corrupt and tbler)
           // it(m_sinrPerceived, (*i).rnti, (*i).numSym, (*i).size, (*i).mcs, thisDeviceRnti); // TODO also export corrupt and tbler)
         }
 
-       bool corrupt = m_random->GetValue () > tbStats->m_tbler ? false : true;
        if(!corrupt)
        {
          Ptr<PacketBurst> burst = (*i).packetBurst;

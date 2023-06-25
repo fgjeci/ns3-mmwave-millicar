@@ -48,10 +48,10 @@ SinrReportStats::SetDb (SQLiteOutput *db, const std::string & tableName)
 					  "SourceRnti INTEGER NOT NULL,"
             "Rnti INTEGER NOT NULL,"
 					  "NumSym INTEGER NOT NULL,"
-					  "sinr DOUBLE NOT NULL,"
+					  "sinr INTEGER NOT NULL,"
             "tbSize INTEGER NOT NULL,"
-					  "Seed INTEGER NOT NULL,"
-						"Run INTEGER NOT NULL,"
+					  // "Seed INTEGER NOT NULL,"
+						// "Run INTEGER NOT NULL,"
 					  "TimeStamp DOUBLE NOT NULL);");
 		  //                        "Run INTEGER NOT NULL);");
   NS_ASSERT (ret);
@@ -123,18 +123,18 @@ void SinrReportStats::WriteCache ()
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 3, static_cast<uint32_t>(v.numSym));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 4, v.sinr); // static_cast<double> (
+      ret = m_db->Bind (stmt, 4, static_cast<uint32_t>(v.sinr)); // static_cast<double> (
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 5, static_cast<uint32_t>(v.tbSize));
-      NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 6, RngSeedManager::GetSeed ());
-      NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 7, static_cast<uint32_t> (RngSeedManager::GetRun ()));
+      // NS_ASSERT (ret);
+      // ret = m_db->Bind (stmt, 6, RngSeedManager::GetSeed ());
+      // NS_ASSERT (ret);
+      // ret = m_db->Bind (stmt, 7, static_cast<uint32_t> (RngSeedManager::GetRun ()));
       NS_ASSERT (ret);
       // ret = m_db->Bind (stmt, 7, static_cast<uint32_t> (MpiInterface::GetSystemId ()));
       // NS_ASSERT (ret);
       // insert the timestamp
-      ret = m_db->Bind (stmt, 8, v.timeInstance);
+      ret = m_db->Bind (stmt, 6, v.timeInstance);
       NS_ASSERT (ret);
 
       ret = m_db->SpinExec (stmt);

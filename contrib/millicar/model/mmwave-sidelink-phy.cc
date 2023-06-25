@@ -133,7 +133,7 @@ MmWaveSidelinkPhy::GetTypeId (void)
                 MakeBooleanChecker())
     .AddAttribute("UpdateSinrEstimatePeriod",
                           "Period (in microseconds) of update of SINR estimate of all the UE",
-                          IntegerValue(1600), // TODO considering refactoring in MmWavePhyMacCommon
+                          IntegerValue(4000), // TODO considering refactoring in MmWavePhyMacCommon
                           MakeIntegerAccessor(&MmWaveSidelinkPhy::m_updateSinrPeriod),
                           MakeIntegerChecker<int>())
     .AddAttribute("UpdateUeSinrEstimatePeriod",
@@ -1171,7 +1171,7 @@ MmWaveSidelinkPhy::Receive (Ptr<Packet> p)
 }
 
 void
-MmWaveSidelinkPhy::GenerateSinrReport (const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs)
+MmWaveSidelinkPhy::GenerateSinrReport (const SpectrumValue& sinr, uint16_t rnti, uint8_t numSym, uint32_t tbSize, uint8_t mcs, bool corrupt)
 {
   NS_LOG_FUNCTION (this << rnti << (uint32_t)numSym << tbSize << (uint32_t)mcs);
 

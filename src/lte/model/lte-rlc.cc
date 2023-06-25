@@ -208,7 +208,7 @@ LteRlc::DoNotifyHarqDeliveryFailure(uint8_t harqId)
 void
 LteRlc::SetUeDataParams(EpcX2Sap::UeDataParams params)
 {
-    isMc = true;
+    // isMc = true;
     m_ueDataParams = params;
 }
 

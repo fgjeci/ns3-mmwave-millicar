@@ -18,11 +18,13 @@ set(source_files
     helper/stats-helper/stats-helper.cc
     helper/stats-helper/send-packet-stats.cc
     helper/stats-helper/ef-mac-rlc-buffer-status.cc
+    helper/stats-helper/ef-scheduling-stats.cc
     helper/parameters-config.cc
     # modified
     model/node-v2v-channel-condition-model.cc
     model/three-gpp-v2v-blockage-channel-condition-model.cc
     model/channel-condition-model-deterministic.cc
+    
     # end modification
 )
 
@@ -56,6 +58,7 @@ set(header_files
     model/node-v2v-channel-condition-model.h
     model/three-gpp-v2v-blockage-channel-condition-model.h
     helper/stats-helper/ef-mac-rlc-buffer-status.h
+    helper/stats-helper/ef-scheduling-stats.h
     model/channel-condition-model-deterministic.h
     # end modification
 )
