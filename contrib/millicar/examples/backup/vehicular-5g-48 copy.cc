@@ -191,7 +191,7 @@ int main (int argc, char *argv[])
   uint32_t numerology = 3; // the numerology
 
   // applications
-  uint32_t packetSize = 1024; // UDP packet size in bytes
+  uint32_t packetSize = 512; // UDP packet size in bytes
   uint32_t startTime = 20; // application start time in milliseconds
   uint32_t endTime = 10000; // application end time in milliseconds
   uint32_t interPacketInterval = 1000; // interpacket interval in microseconds
@@ -308,14 +308,13 @@ int main (int argc, char *argv[])
   relayPacketStats.SetDb(&db, "relayPacketsReportStats");
   macBsrStats.SetDb(&db, "macBsr");
   dlSchedulingStats.SetDb(&db, "dlSchedulingStats");
-  
 
   // create the nodes
   NodeContainer ueNodesRandom, ueNodesGroup1Random, ueNodesGroup2Random, 
                 ueNodesGroup3Random, ueNodesGroup4Random, 
-                ueNodesGroup5Random, ueNodesGroup6Random, ueNodesGroup7Random;
+                ueNodesGroup5Random;
   NodeContainer ueNodes, ueNodesGroup1, ueNodesGroup2, ueNodesGroup3, 
-                ueNodesGroup4, ueNodesGroup5, ueNodesGroup6, ueNodesGroup7;
+                ueNodesGroup4, ueNodesGroup5;
   // NodeContainer inactiveNodes1, inactiveNodes2, inactiveNodesAll;
   // inactiveNodes1.Create(8);
   // inactiveNodes2.Create(8);
@@ -328,8 +327,6 @@ int main (int argc, char *argv[])
   ueNodesGroup3.Create(8);
   ueNodesGroup4.Create(8);
   ueNodesGroup5.Create(8);
-  ueNodesGroup6.Create(8);
-  ueNodesGroup7.Create(8);
   for (uint32_t index = 4; index<5; index++){
     ueNodesRandom.Add(ueNodes.Get(index));
     ueNodesGroup1Random.Add(ueNodesGroup1.Get(index));
@@ -337,8 +334,6 @@ int main (int argc, char *argv[])
     ueNodesGroup3Random.Add(ueNodesGroup3.Get(index));
     ueNodesGroup4Random.Add(ueNodesGroup4.Get(index));
     ueNodesGroup5Random.Add(ueNodesGroup5.Get(index));
-    ueNodesGroup6Random.Add(ueNodesGroup6.Get(index));
-    ueNodesGroup7Random.Add(ueNodesGroup7.Get(index));
   }
   for (uint32_t index = 5; index<8; index++){
     ueNodesRandom.Add(ueNodes.Get(index));
@@ -347,22 +342,13 @@ int main (int argc, char *argv[])
     ueNodesGroup3Random.Add(ueNodesGroup3.Get(index));
     ueNodesGroup4Random.Add(ueNodesGroup4.Get(index));
     ueNodesGroup5Random.Add(ueNodesGroup5.Get(index));
-    ueNodesGroup6Random.Add(ueNodesGroup6.Get(index));
-    ueNodesGroup7Random.Add(ueNodesGroup7.Get(index));
   }
   // 5g part
   NodeContainer allEnbNodes, mmWaveEnbNodes, lteEnbNodes;
   allEnbNodes.Create(2);
   mmWaveEnbNodes.Add(allEnbNodes.Get(0));
-  // lteEnbNodes.Add(allEnbNodes.Get(1));
 
-  // create the mobility models
-  // MobilityHelper mobility;
-  // mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
-  // mobility.Install (ueNodes);
-
-  MobilityHelper uemobility, uemobilityGroup1, uemobilityGroup2, uemobilityGroup3, 
-                uemobilityGroup4, uemobilityGroup5, uemobilityGroup6, uemobilityGroup7;
+  MobilityHelper uemobility, uemobilityGroup1, uemobilityGroup2, uemobilityGroup3, uemobilityGroup4, uemobilityGroup5;
   MobilityHelper uemobilityInactiveGroup1, uemobilityInactiveGroup2;
 
   Ptr<UniformDiscPositionAllocator> uePositionAlloc = CreateObject<UniformDiscPositionAllocator> ();
@@ -371,9 +357,6 @@ int main (int argc, char *argv[])
   Ptr<UniformDiscPositionAllocator> uePositionAllocGroup3 = CreateObject<UniformDiscPositionAllocator> ();
   Ptr<UniformDiscPositionAllocator> uePositionAllocGroup4 = CreateObject<UniformDiscPositionAllocator> ();
   Ptr<UniformDiscPositionAllocator> uePositionAllocGroup5 = CreateObject<UniformDiscPositionAllocator> ();  
-  Ptr<UniformDiscPositionAllocator> uePositionAllocGroup6 = CreateObject<UniformDiscPositionAllocator> ();  
-  Ptr<UniformDiscPositionAllocator> uePositionAllocGroup7 = CreateObject<UniformDiscPositionAllocator> ();  
-
   // Ptr<UniformDiscPositionAllocator> uePositionAllocInactiveGroup1 = CreateObject<UniformDiscPositionAllocator> ();  
   // Ptr<UniformDiscPositionAllocator> uePositionAllocInactiveGroup2 = CreateObject<UniformDiscPositionAllocator> ();  
 
@@ -381,78 +364,6 @@ int main (int argc, char *argv[])
   double rho = 30;
   double center_x = -20;
   double center_y = 60;
-  // Ptr<RandomBoxPositionAllocator> randomBoxInactiveGroup1 = CreateObject<RandomBoxPositionAllocator>();
-  // Ptr<UniformRandomVariable> randomBoxPositionXInactiveGroup1 = CreateObject<UniformRandomVariable>();
-  // Ptr<UniformRandomVariable> randomBoxPositionYInactiveGroup1 = CreateObject<UniformRandomVariable>();
-  // Ptr<ConstantRandomVariable> constBoxPositionZInactiveGroup1 = CreateObject<ConstantRandomVariable>();
-  // constBoxPositionZInactiveGroup1->SetAttribute("Constant", DoubleValue(1.5));
-  // randomBoxPositionXInactiveGroup1->SetAttribute ("Min", DoubleValue (-50));
-  // randomBoxPositionXInactiveGroup1->SetAttribute ("Max", DoubleValue (0));
-  // randomBoxPositionYInactiveGroup1->SetAttribute ("Min", DoubleValue (0));
-  // randomBoxPositionYInactiveGroup1->SetAttribute ("Max", DoubleValue (100));
-  // randomBoxInactiveGroup1->SetX(randomBoxPositionXInactiveGroup1);
-  // randomBoxInactiveGroup1->SetY(randomBoxPositionYInactiveGroup1);
-  // randomBoxInactiveGroup1->SetZ(constBoxPositionZInactiveGroup1);
-
-  // // randomBoxPosition->SetX();
-  // uePositionAllocInactiveGroup1->SetX(center_x);
-  // uePositionAllocInactiveGroup1->SetY(center_y);
-  // uePositionAllocInactiveGroup1->SetZ(1.5);
-  // uePositionAllocInactiveGroup1->SetRho(rho);
-
-  // Ptr<UniformRandomVariable> speedRandomVariableInactiveGroup1 = CreateObject<UniformRandomVariable> ();
-  // speedRandomVariableInactiveGroup1->SetAttribute ("Min", DoubleValue (2.0));
-  // speedRandomVariableInactiveGroup1->SetAttribute ("Max", DoubleValue (4.0));
-
-  // uemobilityInactiveGroup1.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-  //                             PointerValue (speedRandomVariableInactiveGroup1), "Bounds",
-  //                             // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
-  //                             // center_y-3*rho, center_y+3*rho))
-  //                             RectangleValue (Rectangle (-60, 20, -10, 120))
-  //                             );
-
-  // uemobilityInactiveGroup1.SetPositionAllocator(uePositionAllocInactiveGroup1);
-  // uemobilityInactiveGroup1.Install (inactiveNodes1);
-
-  
-  // rho = 30;
-  // center_x = 130;
-  // center_y = 60;
-  // Ptr<RandomBoxPositionAllocator> randomBoxInactiveGroup2 = CreateObject<RandomBoxPositionAllocator>();
-  // Ptr<UniformRandomVariable> randomBoxPositionXInactiveGroup2 = CreateObject<UniformRandomVariable>();
-  // Ptr<UniformRandomVariable> randomBoxPositionYInactiveGroup2 = CreateObject<UniformRandomVariable>();
-  // Ptr<ConstantRandomVariable> constBoxPositionZInactiveGroup2 = CreateObject<ConstantRandomVariable>();
-  // constBoxPositionZInactiveGroup2->SetAttribute("Constant", DoubleValue(1.5));
-  // randomBoxPositionXInactiveGroup2->SetAttribute ("Min", DoubleValue (100));
-  // randomBoxPositionXInactiveGroup2->SetAttribute ("Max", DoubleValue (160));
-  // randomBoxPositionYInactiveGroup2->SetAttribute ("Min", DoubleValue (0));
-  // randomBoxPositionYInactiveGroup2->SetAttribute ("Max", DoubleValue (100));
-  // randomBoxInactiveGroup2->SetX(randomBoxPositionXInactiveGroup2);
-  // randomBoxInactiveGroup2->SetY(randomBoxPositionYInactiveGroup2);
-  // randomBoxInactiveGroup2->SetZ(constBoxPositionZInactiveGroup2);
-
-  // // randomBoxPosition->SetX();
-  // uePositionAllocInactiveGroup2->SetX(center_x);
-  // uePositionAllocInactiveGroup2->SetY(center_y);
-  // uePositionAllocInactiveGroup2->SetZ(1.5);
-  // uePositionAllocInactiveGroup2->SetRho(rho);
-
-  // Ptr<UniformRandomVariable> speedRandomVariableInactiveGroup2 = CreateObject<UniformRandomVariable> ();
-  // speedRandomVariableInactiveGroup2->SetAttribute ("Min", DoubleValue (2.0));
-  // speedRandomVariableInactiveGroup2->SetAttribute ("Max", DoubleValue (4.0));
-
-  // uemobilityInactiveGroup2.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-  //                             PointerValue (speedRandomVariableInactiveGroup2), "Bounds",
-  //                             // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
-  //                             // center_y-3*rho, center_y+3*rho))
-  //                             RectangleValue (Rectangle (90, 170, -10, 120))
-  //                             );
-
-  // uemobilityInactiveGroup2.SetPositionAllocator(uePositionAllocInactiveGroup2);
-  // uemobilityInactiveGroup2.Install (inactiveNodes2);
-
-
-
 
   rho = 20;
   center_x = 55;
@@ -615,79 +526,6 @@ int main (int argc, char *argv[])
   uemobilityGroup5.SetPositionAllocator(randomBoxPosition5);
   uemobilityGroup5.Install (ueNodesGroup5Random);
 
-  // group 6
-  rho = 20;
-  center_x = 100;
-  center_y = 80;
-
-  Ptr<RandomBoxPositionAllocator> randomBoxPosition6 = CreateObject<RandomBoxPositionAllocator>();
-  Ptr<UniformRandomVariable> randomBoxPositionX6 = CreateObject<UniformRandomVariable>();
-  Ptr<UniformRandomVariable> randomBoxPositionY6 = CreateObject<UniformRandomVariable>();
-  Ptr<ConstantRandomVariable> constBoxPositionZ6 = CreateObject<ConstantRandomVariable>();
-  constBoxPositionZ6->SetAttribute("Constant", DoubleValue(1.5));
-  randomBoxPositionX6->SetAttribute ("Min", DoubleValue (80));
-  randomBoxPositionX6->SetAttribute ("Max", DoubleValue (120));
-  randomBoxPositionY6->SetAttribute ("Min", DoubleValue (60));
-  randomBoxPositionY6->SetAttribute ("Max", DoubleValue (100));
-  randomBoxPosition6->SetX(randomBoxPositionX6);
-  randomBoxPosition6->SetY(randomBoxPositionY6);
-  randomBoxPosition6->SetZ(constBoxPositionZ6);
-
-  uePositionAllocGroup6->SetX(center_x);
-  uePositionAllocGroup6->SetY(center_y);
-  uePositionAllocGroup6->SetZ(1.5);
-  uePositionAllocGroup6->SetRho(rho);
-
-  Ptr<UniformRandomVariable> speedRandomVariable6 = CreateObject<UniformRandomVariable> ();
-  speedRandomVariable6->SetAttribute ("Min", DoubleValue (2.0));
-  speedRandomVariable6->SetAttribute ("Max", DoubleValue (4.0));
-
-  uemobilityGroup6.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-                              PointerValue (speedRandomVariable6), "Bounds",
-                              // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
-                              // center_y-3*rho, center_y+3*rho))
-                              RectangleValue (Rectangle (60, 140, 40, 120))
-                              );
-
-  uemobilityGroup6.SetPositionAllocator(randomBoxPosition6);
-  uemobilityGroup6.Install (ueNodesGroup6Random);
-
-  // group 7
-  rho = 20;
-  center_x = 130;
-  center_y = 60;
-
-  Ptr<RandomBoxPositionAllocator> randomBoxPosition7 = CreateObject<RandomBoxPositionAllocator>();
-  Ptr<UniformRandomVariable> randomBoxPositionX7 = CreateObject<UniformRandomVariable>();
-  Ptr<UniformRandomVariable> randomBoxPositionY7 = CreateObject<UniformRandomVariable>();
-  Ptr<ConstantRandomVariable> constBoxPositionZ7 = CreateObject<ConstantRandomVariable>();
-  constBoxPositionZ7->SetAttribute("Constant", DoubleValue(1.5));
-  randomBoxPositionX7->SetAttribute ("Min", DoubleValue (120));
-  randomBoxPositionX7->SetAttribute ("Max", DoubleValue (140));
-  randomBoxPositionY7->SetAttribute ("Min", DoubleValue (40));
-  randomBoxPositionY7->SetAttribute ("Max", DoubleValue (80));
-  randomBoxPosition7->SetX(randomBoxPositionX7);
-  randomBoxPosition7->SetY(randomBoxPositionY7);
-  randomBoxPosition7->SetZ(constBoxPositionZ7);
-
-  uePositionAllocGroup7->SetX(center_x);
-  uePositionAllocGroup7->SetY(center_y);
-  uePositionAllocGroup7->SetZ(1.5);
-  uePositionAllocGroup7->SetRho(rho);
-
-  Ptr<UniformRandomVariable> speedRandomVariable7 = CreateObject<UniformRandomVariable> ();
-  speedRandomVariable7->SetAttribute ("Min", DoubleValue (2.0));
-  speedRandomVariable7->SetAttribute ("Max", DoubleValue (4.0));
-
-  uemobilityGroup7.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-                              PointerValue (speedRandomVariable7), "Bounds",
-                              // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
-                              // center_y-3*rho, center_y+3*rho))
-                              RectangleValue (Rectangle (110, 150, 30, 100))
-                              );
-
-  uemobilityGroup7.SetPositionAllocator(randomBoxPosition7);
-  uemobilityGroup7.Install (ueNodesGroup7Random);
 
   // setting the nodes with blockage
   MobilityHelper costVelocityMobility;
@@ -704,10 +542,6 @@ int main (int argc, char *argv[])
   constantMovingNodes.Add(ueNodesGroup4.Get (1));
   constantMovingNodes.Add(ueNodesGroup5.Get (0));
   constantMovingNodes.Add(ueNodesGroup5.Get (1));
-  constantMovingNodes.Add(ueNodesGroup6.Get (0));
-  constantMovingNodes.Add(ueNodesGroup6.Get (1));
-  constantMovingNodes.Add(ueNodesGroup7.Get (0));
-  constantMovingNodes.Add(ueNodesGroup7.Get (1));
   costVelocityMobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
   costVelocityMobility.Install(constantMovingNodes);
   
@@ -726,10 +560,6 @@ int main (int argc, char *argv[])
   relayNodes.Add(ueNodesGroup4.Get (3));
   relayNodes.Add(ueNodesGroup5.Get (2));
   relayNodes.Add(ueNodesGroup5.Get (3));
-  relayNodes.Add(ueNodesGroup6.Get (2));
-  relayNodes.Add(ueNodesGroup6.Get (3));
-  relayNodes.Add(ueNodesGroup7.Get (2));
-  relayNodes.Add(ueNodesGroup7.Get (3));
   MobilityHelper relayNodeMobility;
   relayNodeMobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   relayNodeMobility.Install(relayNodes);
@@ -747,10 +577,6 @@ int main (int argc, char *argv[])
   ueNodesGroup4.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (45,105,1.5));
   ueNodesGroup5.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,5,1.5));
   ueNodesGroup5.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (45,7,1.5));
-  ueNodesGroup6.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,20,1.5));
-  ueNodesGroup6.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (47,18,1.5));
-  ueNodesGroup7.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,20,1.5));
-  ueNodesGroup7.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (47,18,1.5));
   // setting speed
   ueNodes.Get (0)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (0, speed, 0));
   ueNodes.Get (1)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (0, speed, 0));
@@ -764,10 +590,6 @@ int main (int argc, char *argv[])
   ueNodesGroup4.Get (1)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
   ueNodesGroup5.Get (0)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
   ueNodesGroup5.Get (1)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
-  ueNodesGroup6.Get (0)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
-  ueNodesGroup6.Get (1)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (-speed, 0, 0));
-  ueNodesGroup7.Get (0)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
-  ueNodesGroup7.Get (1)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (-speed, 0, 0));
   // intermediate 
   ueNodes.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (90,65,1.5));
   ueNodes.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (90,60,1.5));
@@ -781,10 +603,6 @@ int main (int argc, char *argv[])
   ueNodesGroup4.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (48,108,1.5));
   ueNodesGroup5.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (45,10,1.5));
   ueNodesGroup5.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (43,8,1.5));
-  ueNodesGroup6.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (100,65,1.5));
-  ueNodesGroup6.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (90,65,1.5));
-  ueNodesGroup7.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (135,50,1.5));
-  ueNodesGroup7.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (135,70,1.5));
   // destination
   ueNodes.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (65,65,1.5));
   ueNodes.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (65,60,1.5));
@@ -798,10 +616,6 @@ int main (int argc, char *argv[])
   ueNodesGroup4.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (43,87,1.5));
   ueNodesGroup5.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (45,20,1.5));
   ueNodesGroup5.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (47,18,1.5));
-  ueNodesGroup6.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (100,90,1.5));
-  ueNodesGroup6.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (90,90,1.5));
-  ueNodesGroup7.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (130,45,1.5));
-  ueNodesGroup7.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (130,75,1.5));
   
   // relay
 
@@ -873,19 +687,11 @@ int main (int argc, char *argv[])
   BuildingsHelper::Install (ueNodesGroup3);
   BuildingsHelper::Install (ueNodesGroup4);
   BuildingsHelper::Install (ueNodesGroup5);
-  BuildingsHelper::Install (ueNodesGroup6);
-  BuildingsHelper::Install (ueNodesGroup7);
-  // BuildingsHelper::Install (inactiveNodes1);
-  // BuildingsHelper::Install (inactiveNodes2);
 
   
   // create and configure the helper
   Ptr<mmwave::MmWaveMillicarHelper> helper = CreateObject<mmwave::MmWaveMillicarHelper> ();
   helper->SetNumerologyMillicar (3);
-
-  // configure 5g part 
-  // helper->SetPathlossModelType("ns3::ThreeGppUmiStreetCanyonPropagationLossModel");
-  // helper->SetChannelConditionModelType("ns3::BuildingsChannelConditionModel");
 
   Ptr<mmwave::MmWavePointToPointEpcHelper> epcHelper = CreateObject<mmwave::MmWavePointToPointEpcHelper>();
   helper->SetEpcHelper(epcHelper);
@@ -902,10 +708,6 @@ int main (int argc, char *argv[])
   NetDeviceContainer ueNetDevGroup3 = helper->InstallUeDevice (ueNodesGroup3);
   NetDeviceContainer ueNetDevGroup4 = helper->InstallUeDevice (ueNodesGroup4);
   NetDeviceContainer ueNetDevGroup5 = helper->InstallUeDevice (ueNodesGroup5);
-  NetDeviceContainer ueNetDevGroup6 = helper->InstallUeDevice (ueNodesGroup6);
-  NetDeviceContainer ueNetDevGroup7 = helper->InstallUeDevice (ueNodesGroup7);
-  // NetDeviceContainer ueNetDevInactiveGroup1 = helper->InstallUeDevice (inactiveNodes1);
-  // NetDeviceContainer ueNetDevInactiveGroup2 = helper->InstallUeDevice (inactiveNodes2);
   
 
   Ptr<mmwave::MmWaveEnbNetDevice> firstEnbDev = DynamicCast<mmwave::MmWaveEnbNetDevice>(mmWaveEnbDevs.Get(0));
@@ -917,10 +719,6 @@ int main (int argc, char *argv[])
   helper->RegisterMillicarDevicesToEnb(ueNetDevGroup3, firstEnbDev);
   helper->RegisterMillicarDevicesToEnb(ueNetDevGroup4, firstEnbDev);
   helper->RegisterMillicarDevicesToEnb(ueNetDevGroup5, firstEnbDev);
-  helper->RegisterMillicarDevicesToEnb(ueNetDevGroup6, firstEnbDev);
-  helper->RegisterMillicarDevicesToEnb(ueNetDevGroup7, firstEnbDev);
-  // helper->RegisterMillicarDevicesToEnb(ueNetDevInactiveGroup1, firstEnbDev);
-  // helper->RegisterMillicarDevicesToEnb(ueNetDevInactiveGroup2, firstEnbDev);
 
   // test message creation
   // firstEnbDev->TestMessageCreation();
@@ -935,10 +733,6 @@ int main (int argc, char *argv[])
   internet.Install (ueNodesGroup3);
   internet.Install (ueNodesGroup4);
   internet.Install (ueNodesGroup5);
-  internet.Install (ueNodesGroup6);
-  internet.Install (ueNodesGroup7);
-  // internet.Install (inactiveNodes1);
-  // internet.Install (inactiveNodes2);
 
   Ipv4AddressHelper ipv4;
 
@@ -988,24 +782,15 @@ int main (int argc, char *argv[])
   Ipv4InterfaceContainer ueNodesGroup3Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup3);
   Ipv4InterfaceContainer ueNodesGroup4Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup4);
   Ipv4InterfaceContainer ueNodesGroup5Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup5);
-  Ipv4InterfaceContainer ueNodesGroup6Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup6);
-  Ipv4InterfaceContainer ueNodesGroup7Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup7);
-  // Ipv4InterfaceContainer ueNodesInactiveGroup1Ipv4InterfaceContainer = ipv4.Assign (ueNetDevInactiveGroup1);
-  // Ipv4InterfaceContainer ueNodesInactiveGroup2Ipv4InterfaceContainer = ipv4.Assign (ueNetDevInactiveGroup2);
 
   // Need to pair the devices in order to create a correspondence between transmitter and receiver
   // and to populate the < IP addr, RNTI > map.
   helper->PairDevicesMillicar(ueNetDev);
-
   helper->PairDevicesMillicar(ueNetDevGroup1);
   helper->PairDevicesMillicar(ueNetDevGroup2);
   helper->PairDevicesMillicar(ueNetDevGroup3);
   helper->PairDevicesMillicar(ueNetDevGroup4);
   helper->PairDevicesMillicar(ueNetDevGroup5);
-  helper->PairDevicesMillicar(ueNetDevGroup6);
-  helper->PairDevicesMillicar(ueNetDevGroup7);
-  // helper->PairDevicesMillicar(ueNetDevInactiveGroup1);
-  // helper->PairDevicesMillicar(ueNetDevInactiveGroup2);
 
   // Set the routing table
 //   Ipv4StaticRoutingHelper ipv4RoutingHelper;
@@ -1036,10 +821,6 @@ int main (int argc, char *argv[])
   helper->AttachToClosestEnb(ueNetDevGroup3, allNetDevs);
   helper->AttachToClosestEnb(ueNetDevGroup4, allNetDevs);
   helper->AttachToClosestEnb(ueNetDevGroup5, allNetDevs);
-  helper->AttachToClosestEnb(ueNetDevGroup6, allNetDevs);
-  helper->AttachToClosestEnb(ueNetDevGroup7, allNetDevs);
-  // helper->AttachToClosestEnb(ueNetDevInactiveGroup1, allNetDevs);
-  // helper->AttachToClosestEnb(ueNetDevInactiveGroup2, allNetDevs);
 
   // create the applications
   uint32_t port = 4000;
@@ -1065,11 +846,9 @@ int main (int argc, char *argv[])
   ApplicationContainer bulkApps, updApps;
   uint32_t trafficGeneratingNodes = 2;
   uint32_t serverPacketSize = 512;
-  uint32_t fullBufferFlowInterval = 100;
-  uint32_t otherFlowPacketInterval = 3000;
 
-  for (uint32_t _ind = 0; _ind < ueNodes.GetN(); ++_ind){
-    // for (int _ind = 0; _ind < 1; ++_ind){
+  for (int _ind = 0; _ind < ueNodes.GetN(); ++_ind){
+  // for (int _ind = 0; _ind < 1; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodes.Get (_ind));
     Ptr<UdpServer> udpEchoServerApp = echoApp.Get(0)->GetObject<UdpServer>();
@@ -1096,7 +875,7 @@ int main (int argc, char *argv[])
     //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodes.Get (_ind), // _ind+4
     //         ueNodesIpv4InterfaceContainer.Get(_ind).first));
   }
-  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
     // VideoStreamClientHelper videoClient (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     // ApplicationContainer videoApp = videoClient.Install (ueNodes.Get (_ind));
@@ -1105,33 +884,19 @@ int main (int argc, char *argv[])
     UdpClientHelper videoClient (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer videoApp = videoClient.Install (ueNodes.Get (_ind));
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(100)));
     bulkApps.Add(videoApp);
-
-    uint32_t _ind_new = ueNodes.GetN() - trafficGeneratingNodes + _ind;
-    UdpClientHelper client_r (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodes.Get (_ind_new));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
-  for (uint32_t _ind = 0; _ind < ueNodes.GetN()/2; ++_ind){
+  for (int _ind = 0; _ind < ueNodes.GetN()/2; ++_ind){
     // traffic on the opposite direction
-    UdpClientHelper client (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    UdpClientHelper client (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer udpApp = client.Install (ueNodes.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(300)));
     bulkApps.Add(udpApp);
-
-    UdpClientHelper client_r (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodes.Get (_ind));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
-  
   // group 1 server
-  for (uint32_t _ind = 0; _ind < ueNodesGroup1.GetN(); ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup1.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup1.Get (_ind));
@@ -1159,7 +924,7 @@ int main (int argc, char *argv[])
     //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup1.Get (_ind), // _ind+4
     //         ueNodesGroup1Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
     // VideoStreamClientHelper videoClient (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup1.Get (_ind));
@@ -1168,32 +933,19 @@ int main (int argc, char *argv[])
     UdpClientHelper videoClient (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup1.Get (_ind));
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(100)));
     updApps.Add(videoApp);
-
-    uint32_t _ind_new = ueNodesGroup1.GetN() - trafficGeneratingNodes + _ind;
-    UdpClientHelper client_r (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup1.Get (_ind_new));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
-  for (uint32_t _ind = 2; _ind < ueNodesGroup1.GetN()/2; ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup1.GetN()/2; ++_ind){
     UdpClientHelper client (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup1.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(300)));
     updApps.Add(udpApp);
-
-    UdpClientHelper client_r (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup1.Get (_ind));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
 
   // group 2 server
-  for (uint32_t _ind = 0; _ind < ueNodesGroup2.GetN(); ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup2.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup2.Get (_ind));
@@ -1221,7 +973,7 @@ int main (int argc, char *argv[])
     //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup2.Get (_ind), // _ind+4
     //         ueNodesGroup2Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
     // VideoStreamClientHelper videoClient (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup2.Get (_ind));
@@ -1230,33 +982,20 @@ int main (int argc, char *argv[])
     UdpClientHelper videoClient (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup2.Get (_ind));
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(100)));
     updApps.Add(videoApp);
-
-    uint32_t _ind_new = ueNodesGroup2.GetN() - trafficGeneratingNodes + _ind;
-    UdpClientHelper client_r (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup2.Get (_ind_new));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
-  for (uint32_t _ind = 2; _ind < ueNodesGroup2.GetN()/2; ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup2.GetN()/2; ++_ind){
 
     UdpClientHelper client (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup2.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(300)));
     updApps.Add(udpApp);
-
-    UdpClientHelper client_r (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup2.Get (_ind));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
 
   // // group3 server
-  for (uint32_t _ind = 0; _ind < ueNodesGroup3.GetN(); ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup3.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup3.Get (_ind));
@@ -1284,7 +1023,7 @@ int main (int argc, char *argv[])
     //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup3.Get (_ind), // _ind+4
     //         ueNodesGroup3Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
     // VideoStreamClientHelper videoClient (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup3.Get (_ind));
@@ -1293,33 +1032,20 @@ int main (int argc, char *argv[])
     UdpClientHelper videoClient (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup3.Get (_ind));
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(100)));
     updApps.Add(videoApp);
-
-    uint32_t _ind_new = ueNodesGroup3.GetN() - trafficGeneratingNodes + _ind;
-    UdpClientHelper client_r (ueNodesGroup3.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup3.Get (_ind_new));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
-  for (uint32_t _ind = 2; _ind < ueNodesGroup3.GetN()/2; ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup3.GetN()/2; ++_ind){
     UdpClientHelper client (ueNodesGroup3.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup3.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(300)));
     updApps.Add(udpApp);
-
-    UdpClientHelper client_r (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup3.Get (_ind));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
 
   // // group 4
 
-  for (uint32_t _ind = 0; _ind < ueNodesGroup4.GetN(); ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup4.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup4.Get (_ind));
@@ -1347,7 +1073,7 @@ int main (int argc, char *argv[])
     //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup4.Get (_ind), // _ind+4
     //         ueNodesGroup4Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
     // VideoStreamClientHelper videoClient (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup4.Get (_ind));
@@ -1356,33 +1082,20 @@ int main (int argc, char *argv[])
     UdpClientHelper videoClient (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup4.Get (_ind));
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(100)));
     updApps.Add(videoApp);
-
-    uint32_t _ind_new = ueNodesGroup4.GetN() - trafficGeneratingNodes + _ind;
-    UdpClientHelper client_r (ueNodesGroup4.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup4.Get (_ind_new));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
-  for (uint32_t _ind = 2; _ind < ueNodesGroup4.GetN()/2; ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup4.GetN()/2; ++_ind){
 
     UdpClientHelper client (ueNodesGroup4.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup4.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(300)));
     updApps.Add(udpApp);
-
-    UdpClientHelper client_r (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup4.Get (_ind));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
 
   // // group 5 server
-  for (uint32_t _ind = 0; _ind < ueNodesGroup5.GetN(); ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup5.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup5.Get (_ind));
@@ -1410,7 +1123,7 @@ int main (int argc, char *argv[])
     //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup5.Get (_ind), // _ind+4
     //         ueNodesGroup5Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
     // VideoStreamClientHelper videoClient (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup5.Get (_ind));
@@ -1419,156 +1132,17 @@ int main (int argc, char *argv[])
     UdpClientHelper videoClient (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup5.Get (_ind));
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(100)));
     updApps.Add(videoApp);
-
-    uint32_t _ind_new = ueNodesGroup5.GetN() - trafficGeneratingNodes + _ind;
-    UdpClientHelper client_r (ueNodesGroup5.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup5.Get (_ind_new));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
-  for (uint32_t _ind = 2; _ind < ueNodesGroup5.GetN()/2; ++_ind){
+  for (int _ind = 0; _ind < ueNodesGroup5.GetN()/2; ++_ind){
     UdpClientHelper client (ueNodesGroup5.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup5.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(300)));
     updApps.Add(udpApp);
-
-    UdpClientHelper client_r (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup5.Get (_ind));
-    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-    updApps.Add(udpApp_r);
   }
 
-  // // // group 6 server
-  // for (int _ind = 0; _ind < ueNodesGroup6.GetN(); ++_ind){
-  // // for (int _ind = 0; _ind < 0; ++_ind){
-  //   UdpServerHelper server (port);
-  //   ApplicationContainer echoApp = server.Install (ueNodesGroup6.Get (_ind));
-  //   Ptr<UdpServer> udpEchoServerApp = echoApp.Get(0)->GetObject<UdpServer>();
-  //   echoApps.Add(echoApp);
-  //   udpEchoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-  //       MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup6.Get (_ind), // _ind+4
-  //           ueNodesGroup6Ipv4InterfaceContainer.Get(_ind).first));
-    
-  //   UdpServerHelper videoServer (port+100);
-  //   ApplicationContainer videoApp = videoServer.Install (ueNodesGroup6.Get (_ind));
-  //   Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
-  //   echoApps.Add(videoApp);
-  //   videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-  //       MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup6.Get (_ind), // _ind+4
-  //           ueNodesGroup6Ipv4InterfaceContainer.Get(_ind).first));
-
-  //   // VideoStreamServerHelper videoServer (port+100);
-  //   // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-  //   // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
-  //   // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup6.Get (_ind));
-  //   // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
-  //   // echoApps.Add(videoApp);
-  //   // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-  //   //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup6.Get (_ind), // _ind+4
-  //   //         ueNodesGroup6Ipv4InterfaceContainer.Get(_ind).first));
-  // }
-  // for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
-  //   NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-  //   // VideoStreamClientHelper videoClient (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-  //   // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup6.Get (_ind));
-  //   // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
-  //   // updApps.Add(videoApp);
-  //   UdpClientHelper videoClient (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-  //   ApplicationContainer videoApp = videoClient.Install (ueNodesGroup6.Get (_ind));
-  //   Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-  //   videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
-  //   updApps.Add(videoApp);
-
-  //   int _ind_new = ueNodesGroup6.GetN() - trafficGeneratingNodes + _ind;
-  //   UdpClientHelper client_r (ueNodesGroup6.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-  //   ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup6.Get (_ind_new));
-  //   Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-  //   udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-  //   updApps.Add(udpApp_r);
-  // }
-  // for (uint32_t _ind = 2; _ind < ueNodesGroup6.GetN()/2; ++_ind){
-
-  //   UdpClientHelper client (ueNodesGroup6.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-  //   ApplicationContainer udpApp = client.Install (ueNodesGroup6.Get (_ind+4));
-  //   Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-  //   udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-  //   updApps.Add(udpApp);
-
-  //   UdpClientHelper client_r (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-  //   ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup6.Get (_ind));
-  //   Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-  //   udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-  //   updApps.Add(udpApp_r);
-  // }
-
-  // // // group 7 server
-  // for (uint32_t _ind = 0; _ind < ueNodesGroup7.GetN(); ++_ind){
-  // // for (int _ind = 0; _ind < 0; ++_ind){
-  //   UdpServerHelper server (port);
-  //   ApplicationContainer echoApp = server.Install (ueNodesGroup7.Get (_ind));
-  //   Ptr<UdpServer> udpEchoServerApp = echoApp.Get(0)->GetObject<UdpServer>();
-  //   echoApps.Add(echoApp);
-  //   udpEchoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-  //       MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup7.Get (_ind), // _ind+4
-  //           ueNodesGroup7Ipv4InterfaceContainer.Get(_ind).first));
-
-  //   UdpServerHelper videoServer (port+100);
-  //   ApplicationContainer videoApp = videoServer.Install (ueNodesGroup7.Get (_ind));
-  //   Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
-  //   echoApps.Add(videoApp);
-  //   videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-  //       MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup7.Get (_ind), // _ind+4
-  //           ueNodesGroup7Ipv4InterfaceContainer.Get(_ind).first));
-
-  //   // VideoStreamServerHelper videoServer (port+100);
-  //   // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-  //   // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
-  //   // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup7.Get (_ind));
-  //   // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
-  //   // echoApps.Add(videoApp);
-  //   // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-  //   //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup7.Get (_ind), // _ind+4
-  //   //         ueNodesGroup7Ipv4InterfaceContainer.Get(_ind).first));
-  // }
-  // for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
-  //   NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-  //   // VideoStreamClientHelper videoClient (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-  //   // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup7.Get (_ind));
-  //   // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
-  //   // updApps.Add(videoApp);
-  //   UdpClientHelper videoClient (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-  //   ApplicationContainer videoApp = videoClient.Install (ueNodesGroup7.Get (_ind));
-  //   Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
-  //   videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
-  //   updApps.Add(videoApp);
-
-  //   int _ind_new = ueNodesGroup7.GetN() - trafficGeneratingNodes + _ind;
-  //   UdpClientHelper client_r (ueNodesGroup7.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-  //   ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup7.Get (_ind_new));
-  //   Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-  //   udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-  //   updApps.Add(udpApp_r);
-  // }
-  // for (uint32_t _ind = 2; _ind < ueNodesGroup7.GetN()/2; ++_ind){
-  //   UdpClientHelper client (ueNodesGroup7.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-  //   ApplicationContainer udpApp = client.Install (ueNodesGroup7.Get (_ind+4));
-  //   Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-  //   udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-  //   updApps.Add(udpApp);
-
-  //   UdpClientHelper client_r (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-  //   ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup7.Get (_ind));
-  //   Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
-  //   udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
-  //   updApps.Add(udpApp_r);
-  // }
-  
-  
   updApps.Start (MilliSeconds (50));
   updApps.Stop (MilliSeconds (endTime));
   echoApps.Start (MilliSeconds (50));
@@ -1587,10 +1161,6 @@ int main (int argc, char *argv[])
   allUeDevices.Add(ueNetDevGroup3);
   allUeDevices.Add(ueNetDevGroup4);
   allUeDevices.Add(ueNetDevGroup5);
-  allUeDevices.Add(ueNetDevGroup6);
-  allUeDevices.Add(ueNetDevGroup7);
-  // allUeDevices.Add(ueNetDevInactiveGroup1);
-  // allUeDevices.Add(ueNetDevInactiveGroup2);
   // traces ueNetDev
   for (auto ueDeviceIt = allUeDevices.Begin();ueDeviceIt != allUeDevices.End(); ++ueDeviceIt){
     Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(*ueDeviceIt)->GetPhyMillicar();
@@ -1603,6 +1173,7 @@ int main (int argc, char *argv[])
     // activating traces on bsr coming from rlc
     ueMac->TraceConnectWithoutContext("RlcBufferStatus",
 											   MakeBoundCallback(&EfStatsHelper::ReportMacBsr, &macBsrStats));
+
     ueMac->TraceConnectWithoutContext("SchedulingInfo",
 											   MakeBoundCallback(&EfStatsHelper::ReportSchedulingInfo, &dlSchedulingStats ));
     
@@ -1614,14 +1185,6 @@ int main (int argc, char *argv[])
     
     ueDev->TraceConnectWithoutContext("RelayPacketReport",
 											   MakeBoundCallback(&EfStatsHelper::RelayPacketReportCallback, &relayPacketStats));
-    // through this relay all traffic between 1-5 should pass through 6
-    // NS_LOG_DEBUG("Setting test relay");
-    // if (relayTime>0){
-    //   NS_LOG_DEBUG("Schedule relay at time " << 0.38 << " seconds");
-    //   Simulator::Schedule (Seconds (0.38), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
-    //                                           ueDev, 1, 5, 4);
-    // }
-    
   }
 
   // helper->EnableTraces();
@@ -1629,10 +1192,6 @@ int main (int argc, char *argv[])
   PrintGnuplottableBuildingListToFile(tracesPath+"buildings.txt");
   PrintGnuplottableUeListToFile(tracesPath+"ues.txt");
   PrintGnuplottableEnbListToFile(tracesPath+"enbs.txt");
-  // Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
-  // lteHelper->Initialize ();
-  // lteHelper->EnablePhyTraces ();
-  // lteHelper->EnableMacTraces ();
 
   // params.outputDir + params.simTag + 
   AnimationInterface *anim = new AnimationInterface(tracesPath+"elephant-flow-animation.xml");

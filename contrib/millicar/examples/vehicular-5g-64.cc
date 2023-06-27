@@ -191,7 +191,7 @@ int main (int argc, char *argv[])
   uint32_t numerology = 3; // the numerology
 
   // applications
-  uint32_t packetSize = 512; // UDP packet size in bytes
+  uint32_t packetSize = 1024; // UDP packet size in bytes
   uint32_t startTime = 20; // application start time in milliseconds
   uint32_t endTime = 10000; // application end time in milliseconds
   uint32_t interPacketInterval = 1000; // interpacket interval in microseconds
@@ -300,12 +300,15 @@ int main (int argc, char *argv[])
   mmwave::SendPacketStats sendPacketStats;
   mmwave::SendPacketStats relayPacketStats;
   mmwave::MacBsrStats macBsrStats;
+  mmwave::DlSchedulingStats dlSchedulingStats ;
 
   sinrReportStats.SetDb(&db, "sinrReportStats");
   allPairssinrReportStats.SetDb(&db, "allPairsReportStats");
   sendPacketStats.SetDb(&db, "sendPacketsReportStats");
   relayPacketStats.SetDb(&db, "relayPacketsReportStats");
   macBsrStats.SetDb(&db, "macBsr");
+  dlSchedulingStats.SetDb(&db, "dlSchedulingStats");
+  
 
   // create the nodes
   NodeContainer ueNodesRandom, ueNodesGroup1Random, ueNodesGroup2Random, 
@@ -1062,10 +1065,11 @@ int main (int argc, char *argv[])
   ApplicationContainer bulkApps, updApps;
   uint32_t trafficGeneratingNodes = 2;
   uint32_t serverPacketSize = 512;
+  uint32_t fullBufferFlowInterval = 100;
+  uint32_t otherFlowPacketInterval = 3000;
 
-  for (int _ind = 0; _ind < ueNodes.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodes.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 1; ++_ind){
-
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodes.Get (_ind));
     Ptr<UdpServer> udpEchoServerApp = echoApp.Get(0)->GetObject<UdpServer>();
@@ -1074,33 +1078,59 @@ int main (int argc, char *argv[])
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodes.Get (_ind), // _ind+4
             ueNodesIpv4InterfaceContainer.Get(_ind).first));
 
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodes.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     packetSinkApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodes.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodes.Get (_ind), // _ind+4
             ueNodesIpv4InterfaceContainer.Get(_ind).first));
-  }
 
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
-    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
-    ApplicationContainer videoApp = videoClient.Install (ueNodes.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
-    bulkApps.Add(videoApp);
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodes.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // packetSinkApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodes.Get (_ind), // _ind+4
+    //         ueNodesIpv4InterfaceContainer.Get(_ind).first));
   }
-  for (int _ind = 0; _ind < ueNodes.GetN()/2; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
+    // VideoStreamClientHelper videoClient (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodes.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // bulkApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer videoApp = videoClient.Install (ueNodes.Get (_ind));
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    bulkApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodes.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodes.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
+  }
+  for (uint32_t _ind = 2; _ind < ueNodes.GetN()/2; ++_ind){
     // traffic on the opposite direction
-    UdpClientHelper client (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    UdpClientHelper client (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodes.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     bulkApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodes.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
   // group 1 server
-  for (int _ind = 0; _ind < ueNodesGroup1.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodesGroup1.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup1.Get (_ind));
@@ -1110,32 +1140,59 @@ int main (int argc, char *argv[])
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup1.Get (_ind), // _ind+4
             ueNodesGroup1Ipv4InterfaceContainer.Get(_ind).first));
 
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodesGroup1.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     echoApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup1.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup1.Get (_ind), // _ind+4
             ueNodesGroup1Ipv4InterfaceContainer.Get(_ind).first));
+
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup1.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // echoApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup1.Get (_ind), // _ind+4
+    //         ueNodesGroup1Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // VideoStreamClientHelper videoClient (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup1.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // updApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup1.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodesGroup1.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup1.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
-  for (int _ind = 0; _ind < ueNodesGroup1.GetN()/2; ++_ind){
+  for (uint32_t _ind = 2; _ind < ueNodesGroup1.GetN()/2; ++_ind){
     UdpClientHelper client (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup1.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     updApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup1.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
 
   // group 2 server
-  for (int _ind = 0; _ind < ueNodesGroup2.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodesGroup2.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup2.Get (_ind));
@@ -1145,33 +1202,60 @@ int main (int argc, char *argv[])
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup2.Get (_ind), // _ind+4
             ueNodesGroup2Ipv4InterfaceContainer.Get(_ind).first));
 
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodesGroup2.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     echoApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup2.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup2.Get (_ind), // _ind+4
             ueNodesGroup2Ipv4InterfaceContainer.Get(_ind).first));
+
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup2.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // echoApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup2.Get (_ind), // _ind+4
+    //         ueNodesGroup2Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // VideoStreamClientHelper videoClient (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup2.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // updApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup2.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodesGroup2.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup2.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
-  for (int _ind = 0; _ind < ueNodesGroup2.GetN()/2; ++_ind){
+  for (uint32_t _ind = 2; _ind < ueNodesGroup2.GetN()/2; ++_ind){
 
     UdpClientHelper client (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup2.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     updApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup2.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
 
   // // group3 server
-  for (int _ind = 0; _ind < ueNodesGroup3.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodesGroup3.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup3.Get (_ind));
@@ -1181,34 +1265,60 @@ int main (int argc, char *argv[])
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup3.Get (_ind), // _ind+4
             ueNodesGroup3Ipv4InterfaceContainer.Get(_ind).first));
 
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodesGroup3.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     echoApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup3.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup3.Get (_ind), // _ind+4
             ueNodesGroup3Ipv4InterfaceContainer.Get(_ind).first));
-  }
 
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
-    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup3.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
-    updApps.Add(videoApp);
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup3.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // echoApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup3.Get (_ind), // _ind+4
+    //         ueNodesGroup3Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (int _ind = 0; _ind < ueNodesGroup3.GetN()/2; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
+    // VideoStreamClientHelper videoClient (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup3.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // updApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup3.Get (_ind));
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    updApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodesGroup3.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodesGroup3.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup3.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
+  }
+  for (uint32_t _ind = 2; _ind < ueNodesGroup3.GetN()/2; ++_ind){
     UdpClientHelper client (ueNodesGroup3.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup3.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     updApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup3.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
 
   // // group 4
 
-  for (int _ind = 0; _ind < ueNodesGroup4.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodesGroup4.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup4.Get (_ind));
@@ -1217,36 +1327,61 @@ int main (int argc, char *argv[])
     udpEchoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup4.Get (_ind), // _ind+4
             ueNodesGroup4Ipv4InterfaceContainer.Get(_ind).first));
-
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodesGroup4.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     echoApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup4.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup4.Get (_ind), // _ind+4
             ueNodesGroup4Ipv4InterfaceContainer.Get(_ind).first));
+
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup4.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // echoApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup4.Get (_ind), // _ind+4
+    //         ueNodesGroup4Ipv4InterfaceContainer.Get(_ind).first));
   }
-
-
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
     NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // VideoStreamClientHelper videoClient (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup4.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // updApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
     ApplicationContainer videoApp = videoClient.Install (ueNodesGroup4.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodesGroup4.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodesGroup4.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup4.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
-  for (int _ind = 0; _ind < ueNodesGroup4.GetN()/2; ++_ind){
+  for (uint32_t _ind = 2; _ind < ueNodesGroup4.GetN()/2; ++_ind){
 
     UdpClientHelper client (ueNodesGroup4.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup4.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     updApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup4.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
 
   // // group 5 server
-  for (int _ind = 0; _ind < ueNodesGroup5.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodesGroup5.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup5.Get (_ind));
@@ -1256,33 +1391,59 @@ int main (int argc, char *argv[])
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup5.Get (_ind), // _ind+4
             ueNodesGroup5Ipv4InterfaceContainer.Get(_ind).first));
 
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodesGroup5.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     echoApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup5.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup5.Get (_ind), // _ind+4
             ueNodesGroup5Ipv4InterfaceContainer.Get(_ind).first));
-  }
 
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
-    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup5.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
-    updApps.Add(videoApp);
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup5.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // echoApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup5.Get (_ind), // _ind+4
+    //         ueNodesGroup5Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (int _ind = 0; _ind < ueNodesGroup5.GetN()/2; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
+    // VideoStreamClientHelper videoClient (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup5.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // updApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup5.Get (_ind));
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    updApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodesGroup5.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodesGroup5.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup5.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
+  }
+  for (uint32_t _ind = 2; _ind < ueNodesGroup5.GetN()/2; ++_ind){
     UdpClientHelper client (ueNodesGroup5.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup5.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     updApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup5.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
 
   // // group 6 server
-  for (int _ind = 0; _ind < ueNodesGroup6.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodesGroup6.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup6.Get (_ind));
@@ -1291,35 +1452,61 @@ int main (int argc, char *argv[])
     udpEchoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup6.Get (_ind), // _ind+4
             ueNodesGroup6Ipv4InterfaceContainer.Get(_ind).first));
-
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodesGroup6.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     echoApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup6.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup6.Get (_ind), // _ind+4
             ueNodesGroup6Ipv4InterfaceContainer.Get(_ind).first));
-  }
 
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
-    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup6.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
-    updApps.Add(videoApp);
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup6.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // echoApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup6.Get (_ind), // _ind+4
+    //         ueNodesGroup6Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (int _ind = 0; _ind < ueNodesGroup6.GetN()/2; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
+    // VideoStreamClientHelper videoClient (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup6.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // updApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup6.Get (_ind));
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    updApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodesGroup6.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodesGroup6.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup6.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
+  }
+  for (uint32_t _ind = 2; _ind < ueNodesGroup6.GetN()/2; ++_ind){
 
     UdpClientHelper client (ueNodesGroup6.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup6.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     updApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup6.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
 
   // // group 7 server
-  for (int _ind = 0; _ind < ueNodesGroup7.GetN(); ++_ind){
+  for (uint32_t _ind = 0; _ind < ueNodesGroup7.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 0; ++_ind){
     UdpServerHelper server (port);
     ApplicationContainer echoApp = server.Install (ueNodesGroup7.Get (_ind));
@@ -1329,29 +1516,55 @@ int main (int argc, char *argv[])
         MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup7.Get (_ind), // _ind+4
             ueNodesGroup7Ipv4InterfaceContainer.Get(_ind).first));
 
-    VideoStreamServerHelper videoServer (port+100);
-    videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
-    videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    UdpServerHelper videoServer (port+100);
     ApplicationContainer videoApp = videoServer.Install (ueNodesGroup7.Get (_ind));
-    Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    Ptr<UdpServer> videoServerApp = videoApp.Get(0)->GetObject<UdpServer>();
     echoApps.Add(videoApp);
     videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
-        MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup7.Get (_ind), // _ind+4
+        MakeBoundCallback (&mmwave::ParametersConfig::RxUdp, _stream, ueNodesGroup7.Get (_ind), // _ind+4
             ueNodesGroup7Ipv4InterfaceContainer.Get(_ind).first));
-  }
 
-  for (int _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
-    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
-    VideoStreamClientHelper videoClient (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
-    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup7.Get (_ind));
-    Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
-    updApps.Add(videoApp);
+    // VideoStreamServerHelper videoServer (port+100);
+    // videoServer.SetAttribute ("MaxPacketSize", UintegerValue (serverPacketSize));
+    // videoServer.SetAttribute ("FrameFile", StringValue ("./scratch/videoStreamer/frameList.txt"));
+    // ApplicationContainer videoApp = videoServer.Install (ueNodesGroup7.Get (_ind));
+    // Ptr<VideoStreamServer> videoServerApp = videoApp.Get(0)->GetObject<VideoStreamServer>();
+    // echoApps.Add(videoApp);
+    // videoServerApp->TraceConnectWithoutContext ("RxWithAddresses", 
+    //     MakeBoundCallback (&mmwave::ParametersConfig::RxUdpVideo, _stream, ueNodesGroup7.Get (_ind), // _ind+4
+    //         ueNodesGroup7Ipv4InterfaceContainer.Get(_ind).first));
   }
-  for (int _ind = 0; _ind < ueNodesGroup7.GetN()/2; ++_ind){
+  for (uint32_t _ind = 0; _ind < trafficGeneratingNodes; ++_ind){
+    NS_LOG_DEBUG("The address of ue " <<  (_ind+4) << ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ());
+    // VideoStreamClientHelper videoClient (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    // ApplicationContainer videoApp = videoClient.Install (ueNodesGroup7.Get (_ind));
+    // Ptr<VideoStreamClient> videoClientApp = videoApp.Get(0)->GetObject<VideoStreamClient>();
+    // updApps.Add(videoApp);
+    UdpClientHelper videoClient (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port);
+    ApplicationContainer videoApp = videoClient.Install (ueNodesGroup7.Get (_ind));
+    Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
+    videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
+    updApps.Add(videoApp);
+
+    uint32_t _ind_new = ueNodesGroup7.GetN() - trafficGeneratingNodes + _ind;
+    UdpClientHelper client_r (ueNodesGroup7.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup7.Get (_ind_new));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
+  }
+  for (uint32_t _ind = 2; _ind < ueNodesGroup7.GetN()/2; ++_ind){
     UdpClientHelper client (ueNodesGroup7.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup7.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
     updApps.Add(udpApp);
+
+    UdpClientHelper client_r (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
+    ApplicationContainer udpApp_r = client_r.Install (ueNodesGroup7.Get (_ind));
+    Ptr<UdpClient> udpEchoClientApp_r = udpApp_r.Get(0)->GetObject<UdpClient>();
+    udpEchoClientApp_r->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    updApps.Add(udpApp_r);
   }
   
   updApps.Start (MilliSeconds (50));
@@ -1388,6 +1601,9 @@ int main (int argc, char *argv[])
     // activating traces on bsr coming from rlc
     ueMac->TraceConnectWithoutContext("RlcBufferStatus",
 											   MakeBoundCallback(&EfStatsHelper::ReportMacBsr, &macBsrStats));
+    ueMac->TraceConnectWithoutContext("SchedulingInfo",
+											   MakeBoundCallback(&EfStatsHelper::ReportSchedulingInfo, &dlSchedulingStats ));
+    
     
     Ptr<mmwave::MmWaveMillicarUeNetDevice> ueDev = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(*ueDeviceIt);
     
