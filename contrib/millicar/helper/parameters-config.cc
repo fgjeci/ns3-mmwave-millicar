@@ -391,7 +391,7 @@ ParametersConfig::EnableTraces()
 	// LogComponentEnable("LteEnbRrc", LOG_LEVEL_ALL);
 	// LogComponentEnable("LteUeRrc", logLevel);
 	// LogComponentEnable ("MmWaveMillicarHelper", LOG_LEVEL_ALL);
-  	// LogComponentEnable ("MmWaveMillicarUeNetDevice", LOG_LEVEL_ALL);
+  	LogComponentEnable ("MmWaveMillicarUeNetDevice", LOG_LEVEL_ALL);
 	// LogComponentEnable ("MmWaveSidelinkMac", LOG_LEVEL_ALL);
 	// LogComponentEnable ("MmWaveSidelinkPhy", LOG_LEVEL_ALL);
 	LogComponentEnable ("Vehicular5G", LOG_LEVEL_ALL);

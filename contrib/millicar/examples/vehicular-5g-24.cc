@@ -216,7 +216,7 @@ int main (int argc, char *argv[])
 
   std::string tracesPath = "./";
   double relayTime = 0;
-  double txpower = 10;
+  double txpower = 0;
   std::string ltePlmnId = "111";
   uint16_t e2startingPort = 38470;
   bool isXappEnabled = false;
@@ -1108,6 +1108,10 @@ int main (int argc, char *argv[])
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     bulkApps.Add(videoApp);
 
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDev.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
+
     uint32_t _ind_new = ueNodes.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp_r = client_r.Install (ueNodes.Get (_ind_new));
@@ -1120,7 +1124,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodes.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     bulkApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1170,6 +1174,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup1.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup1.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1182,7 +1189,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup1.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1232,6 +1239,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup2.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup2.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1245,7 +1255,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup2.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);

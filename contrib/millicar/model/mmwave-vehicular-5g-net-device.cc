@@ -703,7 +703,7 @@ MmWaveMillicarUeNetDevice::ActivateBearerMillicar(const uint8_t bearerId, const 
 void
 MmWaveMillicarUeNetDevice::ReceiveMillicar (Ptr<Packet> p)
 {
-  // NS_LOG_FUNCTION (this << p);
+  NS_LOG_FUNCTION (this << p);
   // NS_LOG_DEBUG ("Received packet at: " << Simulator::Now().GetSeconds() << "s");
   uint8_t ipType;
   // have to check that packet is relay packet or not
@@ -742,6 +742,7 @@ MmWaveMillicarUeNetDevice::ReceiveMillicar (Ptr<Packet> p)
     uint16_t intermediateRnti = packetRelayTag.GetIntermediateRnti();
     Vector _pos = GetNode()->GetObject<MobilityModel> ()->GetPosition ();
     m_relayPacketTrace(p, GetRnti(), _pos);
+    std::cout << "p " << sourceRnti << " " << destinationRnti << " " << intermediateRnti << std::endl;
     // uint16_t destinationRnti = packetRelayHeader.GetDestinationRnti();
     // if the destination is not the local rnti we relay otherwise we send it to application layer
     if (destinationRnti!=GetRnti()){

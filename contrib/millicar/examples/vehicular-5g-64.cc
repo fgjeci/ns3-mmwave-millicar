@@ -191,7 +191,7 @@ int main (int argc, char *argv[])
   uint32_t numerology = 3; // the numerology
 
   // applications
-  uint32_t packetSize = 1024; // UDP packet size in bytes
+  uint32_t packetSize = 512; // UDP packet size in bytes
   uint32_t startTime = 20; // application start time in milliseconds
   uint32_t endTime = 10000; // application end time in milliseconds
   uint32_t interPacketInterval = 1000; // interpacket interval in microseconds
@@ -1107,6 +1107,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     bulkApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDev.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodes.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1120,7 +1123,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodes.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodes.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     bulkApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodes.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1169,6 +1172,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup1.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup1.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1181,7 +1187,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup1.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup1.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup1.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1231,6 +1237,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup2.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup2.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1244,7 +1253,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup2.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup2.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup2.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1294,6 +1303,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup3.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup3.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup3.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1306,7 +1318,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup3.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup3.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup3.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1357,6 +1369,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup4.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup4.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup4.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1370,7 +1385,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup4.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup4.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup4.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1420,6 +1435,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup5.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup5.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup5.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1432,7 +1450,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup5.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup5.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup5.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1482,6 +1500,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup6.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup6.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup6.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1495,7 +1516,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup6.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup6.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup6.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1545,6 +1566,9 @@ int main (int argc, char *argv[])
     Ptr<UdpClient> videoClientApp = videoApp.Get(0)->GetObject<UdpClient>();
     videoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(videoApp);
+    // set tx power to 0
+    Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(ueNetDevGroup7.Get(_ind))->GetPhyMillicar();
+    uePhy->SetTxPower(0);
 
     uint32_t _ind_new = ueNodesGroup7.GetN() - trafficGeneratingNodes + _ind;
     UdpClientHelper client_r (ueNodesGroup7.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1557,7 +1581,7 @@ int main (int argc, char *argv[])
     UdpClientHelper client (ueNodesGroup7.Get (_ind)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
     ApplicationContainer udpApp = client.Install (ueNodesGroup7.Get (_ind+4));
     Ptr<UdpClient> udpEchoClientApp = udpApp.Get(0)->GetObject<UdpClient>();
-    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(otherFlowPacketInterval)));
+    udpEchoClientApp->SetAttribute("Interval", TimeValue(MicroSeconds(fullBufferFlowInterval)));
     updApps.Add(udpApp);
 
     UdpClientHelper client_r (ueNodesGroup7.Get (_ind+4)->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal (), port+100);
@@ -1567,9 +1591,9 @@ int main (int argc, char *argv[])
     updApps.Add(udpApp_r);
   }
   
-  updApps.Start (MilliSeconds (50));
+  updApps.Start (MilliSeconds (0));
   updApps.Stop (MilliSeconds (endTime));
-  echoApps.Start (MilliSeconds (50));
+  echoApps.Start (MilliSeconds (0));
   echoApps.Stop (MilliSeconds (endTime));
   packetSinkApps.Start (MilliSeconds (0));
   packetSinkApps.Stop (MilliSeconds (endTime));

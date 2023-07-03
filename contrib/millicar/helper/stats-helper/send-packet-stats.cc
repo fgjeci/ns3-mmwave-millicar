@@ -60,9 +60,9 @@ SendPacketStats::SetDb (SQLiteOutput *db, const std::string & tableName)
                         "packetId INTEGER NOT NULL,"
                         "txtime DOUBLE NOT NULL,"
                         "seqNum INTEGER NOT NULL,"
-                        "payloadSize INTEGER NOT NULL,"
                         "Seed INTEGER NOT NULL,"
                         "Run INTEGER NOT NULL,"
+                        "payloadSize INTEGER NOT NULL,"
                         "TimeStamp DOUBLE NOT NULL);");
 		  //                        "Run INTEGER NOT NULL);");
   NS_ASSERT (ret);
@@ -101,7 +101,7 @@ SendPacketStats::SavePacketSend (uint16_t sourceRnti, uint16_t intermediateRnti,
 	m_sendPacketCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000000)
+  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000)
     {
       WriteCache ();
     }
@@ -135,7 +135,7 @@ SendPacketStats::SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti
 	m_sendPacketCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000000)
+  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000)
     {
       WriteCache ();
     }
@@ -196,7 +196,7 @@ void SendPacketStats::WriteCache ()
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 12, v.payloadSize);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 13, v.timeInstance);
+      ret = m_db->Bind (stmt, 13, v.timeInstance.GetSeconds());
       
       // NS_ASSERT (ret);
       // ret = m_db->Bind (stmt, 13, v.sourceAddr); // static_cast<double> (
