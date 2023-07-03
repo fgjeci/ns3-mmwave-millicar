@@ -401,7 +401,7 @@ ParametersConfig::EnableTraces()
 //   LogComponentEnable ("MmWaveFlexTtiMaxWeightMacScheduler", LOG_LEVEL_ALL);
 // 	LogComponentEnable ("MmWaveFlexTtiMaxRateMacScheduler", LOG_LEVEL_ALL);
   
-//   LogComponentEnable ("E2Termination", logLevel);
+  LogComponentEnable ("E2Termination", logLevel);
 
 //   LogComponentEnable ("LteEnbNetDevice", logLevel);
 //   LogComponentEnable ("MmWaveEnbNetDevice", logLevel);

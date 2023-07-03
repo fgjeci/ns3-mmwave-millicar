@@ -37,6 +37,7 @@ while (false);
 #include <ns3/mmwave-ue-net-device.h>
 #include <ns3/net-device.h>
 #include <ns3/node.h>
+#include "mmwave-packet-relay-tag.h"
 
 namespace ns3 {
 
@@ -167,7 +168,7 @@ MmWaveSidelinkMac::DoDispose ()
 void
 MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
 {
-  // NS_LOG_FUNCTION (this);
+  NS_LOG_FUNCTION (this);
   m_frame = timingInfo.m_frameNum;
   m_subframe = timingInfo.m_sfNum;
   m_slotNum = timingInfo.m_slotNum;
@@ -570,26 +571,83 @@ MmWaveSidelinkMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters param
     it->second.push_back (params);
   }
 }
-
+// original
 void
 MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
 {
   NS_LOG_FUNCTION(this << p);
   LteMacSapUser::ReceivePduParameters rxPduParams;
-
   LteRadioBearerTag tag;
   p->PeekPacketTag (tag);
-
   // pick the right lcid associated to this communication. As discussed, this can be done via a dedicated SidelinkBearerTag
   rxPduParams.p = p;
   rxPduParams.rnti = tag.GetRnti ();
   rxPduParams.lcid = tag.GetLcid ();
-
-  NS_LOG_DEBUG ("Received a packet " << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
-
+  // NS_LOG_DEBUG ("Received a packet "  << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
   LteMacSapUser* macSapUser = m_lcidToMacSap.find(rxPduParams.lcid)->second;
   macSapUser->ReceivePdu (rxPduParams);
 }
+// end original
+// modified
+// void
+// MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
+// {
+//   NS_LOG_FUNCTION(this << p);
+//   // check if is relay
+//   Ptr<Packet> packet = p->Copy();
+//   LteRadioBearerTag tagRelay;
+//   packet->RemovePacketTag(tagRelay);
+//   // get the relay tag
+//   MmWavePacketRelayTag packetRelayTag;
+//   bool hasRelayTag = packet->PeekPacketTag(packetRelayTag);
+//   uint16_t destinationRnti = packetRelayTag.GetDestinationRnti();
+//   uint16_t sourceRnti = packetRelayTag.GetSourceRnti();
+//   uint16_t intermediateRnti = packetRelayTag.GetIntermediateRnti();
+
+//   if (packetRelayTag.GetIntermediateRnti()!=UINT16_MAX){
+//     NS_LOG_UNCOND("Dest " << destinationRnti << " source " << sourceRnti
+//               << " inter " << intermediateRnti << " local " << GetRnti()
+//               << " packet size " << p->GetSize());
+//   }
+
+//   // it means we have a relay packet
+//   // first we trigger the device callback to store the relay packet
+//   m_forwardUpCallback(packet);
+//   // and send directly to the destination
+
+
+//   // if (destinationRnti!=GetRnti()){
+//   //   LteMacSapProvider::TransmitPduParameters txPduParams;
+//   //   // txPduParams.rnti = tagRelay.GetRnti();
+//   //   txPduParams.rnti = destinationRnti;
+//   //   txPduParams.lcid = tagRelay.GetLcid();
+//   //   txPduParams.layer = tagRelay.GetLayer();
+//   //   txPduParams.pdu=packet;
+//   //   // finally transmit
+//   //   DoTransmitPdu(txPduParams);
+//   //   return;
+//   // }
+
+//   if (destinationRnti==GetRnti()){
+//     LteMacSapUser::ReceivePduParameters rxPduParams;
+
+//     LteRadioBearerTag tag;
+//     p->PeekPacketTag (tag);
+
+//     // pick the right lcid associated to this communication. As discussed, this can be done via a dedicated SidelinkBearerTag
+//     rxPduParams.p = p;
+//     rxPduParams.rnti = tag.GetRnti ();
+//     rxPduParams.lcid = tag.GetLcid ();
+
+//     NS_LOG_DEBUG ("Received a packet " << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
+
+//     LteMacSapUser* macSapUser = m_lcidToMacSap.find(rxPduParams.lcid)->second;
+//     macSapUser->ReceivePdu (rxPduParams);
+
+//   }
+// }
+
+// end modification
 
 MmWaveSidelinkPhySapUser*
 MmWaveSidelinkMac::GetPhySapUser () const

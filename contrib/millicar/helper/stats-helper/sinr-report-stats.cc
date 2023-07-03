@@ -80,7 +80,7 @@ SinrReportStats::SaveSinr (uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, u
 //  m_sinrCache.emplace_back (SinrResultCache (cellId, bwpId, rnti, avgSinr));
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sinrCache.size () * sizeof (SinrResultCache) > 1000000)
+  if (m_sinrCache.size () * sizeof (SinrResultCache) > 1000)
     {
       WriteCache ();
     }
@@ -134,7 +134,7 @@ void SinrReportStats::WriteCache ()
       // ret = m_db->Bind (stmt, 7, static_cast<uint32_t> (MpiInterface::GetSystemId ()));
       // NS_ASSERT (ret);
       // insert the timestamp
-      ret = m_db->Bind (stmt, 8, v.timeInstance);
+      ret = m_db->Bind (stmt, 8, v.timeInstance.GetSeconds());
       NS_ASSERT (ret);
 
       ret = m_db->SpinExec (stmt);

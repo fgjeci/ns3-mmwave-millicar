@@ -629,7 +629,9 @@ MmWaveMillicarHelper::InstallSingleMmWaveVehicularNetDeviceMillicar (Ptr<Node> n
   ssp->SetDevice (device);
 
   // connect the rx callback of the mac object to the rx method of the NetDevice
-  mac->SetForwardUpCallback(MakeCallback(&MmWaveMillicarUeNetDevice::ReceiveMillicar, device));
+//   mac->SetForwardUpCallback(MakeCallback(&MmWaveMillicarUeNetDevice::ReceiveMillicar, device));
+// this callback shall be usef for reports only as we pass through rlc to arrive at application layer
+mac->SetForwardUpCallback(MakeCallback(&MmWaveMillicarUeNetDevice::RegisterReceivedPacketMillicar, device));
   mac->SetDevice(device);
 //   mac->SetAttributeFailSafe ("Device", PointerValue (device));
 
@@ -2590,7 +2592,7 @@ MmWaveMillicarHelper::InstallSingleEnbDevice(Ptr<Node> n)
         // modified
         // const std::string gnb_id{m_ltePlmnId.back()};
         // last 2 elements
-        const std::string gnb_id{m_ltePlmnId.substr(m_ltePlmnId.size()-2)};
+        const std::string gnb_id{m_ltePlmnId.substr(m_ltePlmnId.size()-2)+"00"};
         // std::string plmnId = m_ltePlmnId;
         // end modification
 

@@ -198,6 +198,10 @@ class MmWaveMillicarUeNetDevice : public MmWaveUeNetDevice
    */
   void ReceiveMillicar (Ptr<Packet> p);
 
+  void Receive (Ptr<Packet> p);
+
+  void RegisterReceivedPacketMillicar (Ptr<Packet> p);
+
   /**
    * \brief a logical channel with instances of PDCP/RLC layers is created and associated to a specific receiving device
    * \param bearerId identifier of the tunnel between two devices
