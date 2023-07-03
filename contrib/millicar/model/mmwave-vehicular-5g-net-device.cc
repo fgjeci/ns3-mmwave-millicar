@@ -700,6 +700,86 @@ MmWaveMillicarUeNetDevice::ActivateBearerMillicar(const uint8_t bearerId, const 
   m_bearerToInfoMapMillicar.insert (std::make_pair (bearerId, rbInfo));
 }
 
+
+// original
+void
+MmWaveMillicarUeNetDevice::Receive (Ptr<Packet> p)
+{
+  NS_LOG_FUNCTION (this << p);
+  NS_LOG_DEBUG ("Received packet at: " << Simulator::Now().GetSeconds() << "s");
+  uint8_t ipType;
+
+  MmWavePacketRelayTag packetRelayTag, packetRelayTagRemove;
+  bool hasRelayTag = p->PeekPacketTag(packetRelayTag);
+  if (packetRelayTag.GetDestinationRnti() == GetRnti()){
+    bool hasRelayTag = p->RemovePacketTag(packetRelayTagRemove);
+  }
+
+  p->CopyData (&ipType, 1);
+  ipType = (ipType>>4) & 0x0f;
+
+  if (ipType == 0x04)
+  {
+    m_rxCallback (this, p, Ipv4L3Protocol::PROT_NUMBER, Address ());
+  }
+  else if (ipType == 0x06)
+  {
+    m_rxCallback (this, p, Ipv6L3Protocol::PROT_NUMBER, Address ());
+  }
+  else
+  {
+    NS_ABORT_MSG ("MmWaveVehicularNetDevice::Receive - Unknown IP type...");
+  }
+}
+// end original
+
+// modified
+
+void
+MmWaveMillicarUeNetDevice::RegisterReceivedPacketMillicar (Ptr<Packet> p){
+  // std::cout<< "Register data size " << p->GetSize() << std::endl;
+  Vector _pos = GetNode()->GetObject<MobilityModel> ()->GetPosition ();
+  Ptr<Packet> packet = p->Copy();
+  m_relayPacketTrace(packet, GetRnti(), _pos);
+  
+  // we have to relay back this packet if it is relay
+  // first we extract the right lc for the destination
+  MmWavePacketRelayTag packetRelayTag;
+  bool hasRelayTag = packet->PeekPacketTag(packetRelayTag);
+  uint16_t destinationRnti = packetRelayTag.GetDestinationRnti();
+  uint16_t sourceRnti = packetRelayTag.GetSourceRnti();
+  uint16_t intermediateRnti = packetRelayTag.GetIntermediateRnti();
+  if (intermediateRnti == GetRnti()){
+    // if this is the intermediate node, we relay it
+    // get the lcid of the destination 
+    Ptr<millicar::SidelinkRadioBearerInfo> bearerInfo;
+    uint8_t lcid=0;
+  
+    for (auto bearerIt = m_bearerToInfoMapMillicar.begin(); bearerIt!=m_bearerToInfoMapMillicar.end(); ++bearerIt)
+    {
+      if(bearerIt->second->m_rnti == destinationRnti){
+        bearerInfo = bearerIt->second;  
+        // convert beared into to lcid
+        lcid= m_bid2lcidMillicar[bearerIt->first];
+      }
+    }
+
+    NS_LOG_DEBUG("Relay packet sr " << sourceRnti<< " dr "
+                << destinationRnti << " ir " << intermediateRnti);
+
+    LteMacSapProvider::TransmitPduParameters txParams;
+    txParams.layer=0;
+    txParams.harqProcessId=0;
+    txParams.componentCarrierId=0;
+    // the rnti is the source rnti
+    txParams.rnti = sourceRnti;
+    txParams.lcid = lcid;
+    txParams.pdu=packet;
+
+    m_macMillicar->DoTransmitPdu(txParams);
+  }
+}
+
 void
 MmWaveMillicarUeNetDevice::ReceiveMillicar (Ptr<Packet> p)
 {
@@ -725,7 +805,7 @@ MmWaveMillicarUeNetDevice::ReceiveMillicar (Ptr<Packet> p)
               << " seq " << p->GetUid()
               << " peek " << hasRelayTag
               // << " isrelay " << hasRelayHeader
-              // << " size " << p->GetSize()
+              << " size " << p->GetSize()
               
               );
   // }

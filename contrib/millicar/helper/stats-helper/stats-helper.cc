@@ -5,6 +5,9 @@
 #include <ns3/seq-ts-size-header.h>
 #include <ns3/udp-l4-protocol.h>
 #include <ns3/udp-header.h>
+#include <ns3/lte-rlc-header.h>
+#include <ns3/lte-rlc-tag.h>
+#include <ns3/lte-pdcp-tag.h>
 // #include "ns3/mmwave-sidelink-mac.h"
 
 
@@ -129,11 +132,100 @@ EfStatsHelper::ReportSchedulingInfo(mmwave::DlSchedulingStats *enbStats, millica
         schedParams.mcs, schedParams.tbSize);
 }
 
+// void
+// EfStatsHelper:: RelayPacketReportCallback (mmwave::SendPacketStats *stats, Ptr<Packet> p, uint16_t localRnti
+//                                         , Vector pos// ,const ns3::Address & from, const ns3::Address & to
+//                                         ){
+//   // NS_LOG_UNCOND("RelayPacketReportCallback");
+//     Ptr<Packet> packet = p->Copy();
+//     // LteRlcHeader rlcHeader;
+//     // packet->RemoveHeader(rlcHeader);
+//     RlcTag rlcTag;
+//     Time delayRlc;
+//     if (packet->FindFirstMatchingByteTag(rlcTag))
+//     {
+//         delayRlc = Simulator::Now() - rlcTag.GetSenderTimestamp();
+//     }
+//     // Receiver timestamp
+//     PdcpTag pdcpTag;
+//     Time delay;
+//     if (packet->FindFirstMatchingByteTag(pdcpTag))
+//     {
+//         delay = Simulator::Now() - pdcpTag.GetSenderTimestamp();
+//     }
+//     LtePdcpHeader pdcpHeader;
+//     packet->RemoveHeader(pdcpHeader);
+//     // NS_LOG_UNCOND("PDCP header: " << pdcpHeader);
+//     // NS_LOG_UNCOND("Rlc tag: " << rlcTag.GetSenderTimestamp());
+//     // NS_LOG_UNCOND("pdcpTag tag: " << pdcpTag.GetSenderTimestamp());
+    
+//     // Ipv4Header ipv4Header;
+//     // uint32_t ipv4Size = packet->RemoveHeader(ipv4Header);
+
+//     Ipv4Header ipv4Header;
+//     uint32_t ipv4Size = packet->PeekHeader(ipv4Header);
+
+//     uint8_t protocol = ipv4Header.GetProtocol();
+//     uint16_t payloadSize = ipv4Header.GetPayloadSize();
+
+//     // NS_LOG_UNCOND("relay report " << +protocol << " payload size "
+//     //               << " ip header " << ipv4Header.GetDestination() << " size " << payloadSize);
+
+//     // if (protocol == UdpL4Protocol::PROT_NUMBER && payloadSize >= 8)
+//     // {
+//       // UdpHeader udpHeader;
+//       // packet->RemoveHeader(udpHeader);
+
+//       SeqTsHeader seqTsHeader;
+//       packet->RemoveHeader(seqTsHeader);
+//       // set again the header
+//       // packet->AddHeader(ipv4Header);
+
+//       MmWavePacketRelayTag packetRelayTag;
+//       bool hasTag = packet->PeekPacketTag(packetRelayTag);
+//       uint16_t destinationRnti = packetRelayTag.GetDestinationRnti();
+//       uint16_t sourceRnti = packetRelayTag.GetSourceRnti();
+//       uint16_t intermediateRnti = packetRelayTag.GetIntermediateRnti();
+
+//       NS_LOG_UNCOND("Dest " << destinationRnti << " source " << sourceRnti
+//               << " inter " << intermediateRnti << " packet size " << p->GetSize());
+
+//       std::stringstream sa, da;
+//       sa << ipv4Header.GetSource();
+//       da << ipv4Header.GetDestination();
+//       // sa << from;
+//       // da << to;
+//       std::string sourceAddress = sa.str();
+//       std::string destAddress = da.str();
+
+//       // uint16_t destinationRnti = packetRelayTag.GetDestinationRnti();
+//       // uint16_t sourceRnti = packetRelayTag.GetSourceRnti();
+//       // uint16_t intermediateRnti = packetRelayTag.GetIntermediateRnti();
+      
+//       uint64_t packetId = packet->GetUid();
+      
+//       uint32_t seqNumber = seqTsHeader.GetSeq();
+//       double txTime = seqTsHeader.GetTs().GetSeconds();
+
+//       NS_LOG_UNCOND(" seq number " << seqNumber << " tx time "<<txTime);
+
+//       // std::cout << "Sequence number " << seqNumber << " txtime " << txTime << std::endl;
+
+//       stats->SavePacketRelay (sourceRnti, intermediateRnti, destinationRnti, localRnti,
+//                             sourceAddress, destAddress
+//                             , pos
+//                             , packetId, pdcpHeader.GetSequenceNumber(), rlcTag.GetSenderTimestamp().GetSeconds(),
+//                             packet->GetSize() 
+//                             );
+//     // }
+
+    
+// }
+
 void
 EfStatsHelper::RelayPacketReportCallback (mmwave::SendPacketStats *stats, Ptr<Packet> p, uint16_t localRnti
                                         , Vector pos// ,const ns3::Address & from, const ns3::Address & to
-                                        )
-{
+                                        ){
 		// NS_LOG_UNCOND("saving sinr" << sourceCellId);
 
     Ptr<Packet> packet = p->Copy();
@@ -187,6 +279,8 @@ EfStatsHelper::RelayPacketReportCallback (mmwave::SendPacketStats *stats, Ptr<Pa
 
     
 }
+
+
 
 
 // }

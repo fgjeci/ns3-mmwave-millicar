@@ -101,7 +101,7 @@ SendPacketStats::SavePacketSend (uint16_t sourceRnti, uint16_t intermediateRnti,
 	m_sendPacketCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000)
+  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000000)
     {
       WriteCache ();
     }
@@ -117,8 +117,9 @@ SendPacketStats::SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti
                         )
 {
 //	NS_UNUSED (power);
-//	NS_LOG_UNCOND("Saving sinr " << cellId << " " << rnti<< " " << power<< " " << avgSinr << " " << bwpId);
-	SendPacketCache c;
+	// NS_LOG_UNCOND("Saving sinr " << cellId << " " << rnti<< " " << power<< " " << avgSinr << " " << bwpId);
+  
+  SendPacketCache c;
 	c.timeInstance = Simulator::Now();
 	c.sourceRnti = sourceRnti;
 	c.intermediateRnti = intermediateRnti;
@@ -135,7 +136,7 @@ SendPacketStats::SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti
 	m_sendPacketCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000)
+  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000000)
     {
       WriteCache ();
     }
@@ -190,11 +191,11 @@ void SendPacketStats::WriteCache ()
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 9, v.seqNumber);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 10, RngSeedManager::GetSeed ());
+      ret = m_db->Bind (stmt, 10, v.payloadSize);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 11, static_cast<uint32_t> (RngSeedManager::GetRun ()));
+      ret = m_db->Bind (stmt, 11, RngSeedManager::GetSeed ());
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 12, v.payloadSize);
+      ret = m_db->Bind (stmt, 12, static_cast<uint32_t> (RngSeedManager::GetRun ()));
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 13, v.timeInstance.GetSeconds());
       
