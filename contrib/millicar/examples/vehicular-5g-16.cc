@@ -833,8 +833,8 @@ int main (int argc, char *argv[])
   box2.xMin = 50; box2.xMax = 80; box2.yMin = 10; box2.yMax = 40;
   box3.xMin = 10; box3.xMax = 40; box3.yMin = 80; box3.yMax = 100;
   box4.xMin = 50; box4.xMax = 80; box4.yMin = 80; box4.yMax = 100;
-  box5.xMin = 50; box5.xMax = 80; box5.yMin = 80; box5.yMax = 100;
-  box6.xMin = 50; box6.xMax = 80; box6.yMin = 80; box6.yMax = 100;
+  box5.xMin = 10; box5.xMax = 40; box5.yMin = 100; box5.yMax = 120;
+  box6.xMin = 80; box6.xMax = 100; box6.yMin = 100; box6.yMax = 120;
   double buildingHeight = 50;
 
   building1->SetBoundaries(Box(box1.xMin, box1.xMax, box1.yMin, box1.yMax, 0.0, buildingHeight));
