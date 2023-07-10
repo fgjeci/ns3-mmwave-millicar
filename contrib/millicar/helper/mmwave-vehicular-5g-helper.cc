@@ -112,8 +112,8 @@ MmWaveMillicarHelper::MmWaveMillicarHelper(void)
     m_lteEnbAntennaModelFactory.SetTypeId(IsotropicAntennaModel::GetTypeId());
 
     m_uePhasedArrayModelFactory.SetTypeId(UniformPlanarArray::GetTypeId());
-    m_uePhasedArrayModelFactory.Set("NumColumns", UintegerValue(2));
-    m_uePhasedArrayModelFactory.Set("NumRows", UintegerValue(2));
+    m_uePhasedArrayModelFactory.Set("NumColumns", UintegerValue(4));
+    m_uePhasedArrayModelFactory.Set("NumRows", UintegerValue(8));
     m_enbPhasedArrayModelFactory.SetTypeId(UniformPlanarArray::GetTypeId());
     m_enbPhasedArrayModelFactory.Set("NumColumns", UintegerValue(8));
     m_enbPhasedArrayModelFactory.Set("NumRows", UintegerValue(8));
