@@ -4,7 +4,7 @@ set(base_examples
     vehicular-5g-64
     vehicular-5g-16
     vehicular-5g-8
-    vehicular-5g-few-users
+    # vehicular-5g-few-users
     # vehicular-5g
     # vehicular-5g-single-group
     # vehicular-5g-multi-groups
