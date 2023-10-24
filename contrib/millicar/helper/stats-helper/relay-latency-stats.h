@@ -16,11 +16,12 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-#ifndef SINR_REPORT_STATS_H
-#define SINR_REPORT_STATS_H
+#ifndef RELAY_LATENCY_STATS_H
+#define RELAY_LATENCY_STATS_H
 
 #include <inttypes.h>
 #include <vector>
+#include <ns3/network-module.h>
 
 #include <ns3/sqlite-output.h>
 
@@ -39,13 +40,13 @@ namespace mmwave {
  * \see SaveSinr
  * \see EmptyCache
  */
-class SinrReportStats
+class RelayLatencyStats
 {
 public:
   /**
    * \brief Constructor
    */
-  SinrReportStats ();
+  RelayLatencyStats ();
 
   /**
    * \brief Install the output dabase.
@@ -56,18 +57,12 @@ public:
    * method creates, if not exists, a table for storing the values. The table
    * will contain the following columns:
    *
-   * - "CellId INTEGER NOT NULL, "
-   * - "BwpId INTEGER NOT NULL,"
-   * - "Rnti INTEGER NOT NULL,"
-   * - "AvgSinr DOUBLE NOT NULL,"
-   * - "Seed INTEGER NOT NULL,"
-   * - "Run INTEGER NOT NULL);"
    *
    * Please note that this method, if the db already contains a table with
    * the same name, also clean existing values that has the same
    * Seed/Run pair.
    */
-  void SetDb (SQLiteOutput *db, const std::string& tableName = "sinrReportStats");
+  void SetDb (SQLiteOutput *db, const std::string& tableName = "relayLatencyStats");
 
   /**
    * \brief Store the SINR values
@@ -80,7 +75,16 @@ public:
    * The method saves the result in a cache, and if it is necessary, writes the
    * cache to disk before emptying it.
    */
-  void SaveSinr (uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, uint32_t tbSize, double snr, double sinr);
+
+    
+    void SaveRelayLatency (uint16_t sourceRnti, //uint16_t intermediateRnti, 
+                        uint16_t destinationRnti, uint16_t localRnti, 
+                        // std::string sourceAddress, std::string destAddress
+                        // , Vector position
+                        uint64_t packetId, // uint32_t seqNumber, 
+                        double txTime, uint32_t packetSize, 
+                        uint8_t traceSource
+                        );
 
   /**
    * \brief Force the cache write to disk, emptying the cache itself.
@@ -93,30 +97,29 @@ private:
 
   void WriteCache ();
 
-  struct SinrResultCache
+  struct RelayLatencyCache
   {
-//    SinrResultCache (uint16_t c, uint16_t b, uint16_t r, double s)
-//      : cellId (c), bwpId (b), rnti (r), avgSinr (s), timeInstance(Simulator::Now()) {}
-//    Time timeInstance {0};
-//    uint16_t cellId {0};
-//    uint16_t bwpId {0};
-//    uint16_t rnti {0};
-//    double avgSinr {0.0};
 
     Time timeInstance;
-    uint16_t sourceRnti;
-    uint16_t rnti;
-    uint8_t numSym;
-    uint32_t tbSize;
-    double sinr;
-    double snr;
+    uint16_t sourceRnti{UINT16_MAX};
+    // uint16_t intermediateRnti{UINT16_MAX};
+    uint16_t destRnti{UINT16_MAX};
+    uint16_t localRnti{UINT16_MAX};
+    // std::string sourceAddr;
+    // std::string destAddr;
+    uint64_t packetId;
+    // uint32_t seqNumber; 
+    double txTime;
+    // Vector position;
+    uint32_t packetSize;
+    uint8_t traceSource{1};
   };
 
   SQLiteOutput *m_db;                         //!< DB pointer
-  std::vector<SinrResultCache> m_sinrCache;   //!< Result cache
+  std::vector<RelayLatencyCache> m_relayLatencyCache;   //!< Result cache
   std::string m_tableName;                    //!< Table name
 };
 }
 } // namespace ns3
 
-#endif // SINR_OUTPUT_STATS_H
+#endif // RELAY_LATENCY_STATS_H

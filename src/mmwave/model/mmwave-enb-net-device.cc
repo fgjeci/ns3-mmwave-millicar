@@ -400,13 +400,13 @@ MmWaveEnbNetDevice::RegisterSlSinrReportReading(uint16_t localRnti, uint16_t des
 }
 
 void
-MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReadingCallback(Ptr<MmWaveEnbNetDevice> netDev, std::string context, uint16_t localRnti, uint64_t destRnti, double avgSinr) // , double positionX, double positionY
+MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReadingCallback(Ptr<MmWaveEnbNetDevice> netDev, std::string context, uint16_t localRnti, uint64_t destRnti, double avgSnr, double avgSinr) // , double positionX, double positionY
 {
-  netDev->RegisterPeerDevicesSinrReportReading(localRnti, destRnti, avgSinr); // , positionX, positionY
+  netDev->RegisterPeerDevicesSinrReportReading(localRnti, destRnti, avgSnr, avgSinr); // , positionX, positionY
 }
 
 void
-MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uint64_t destRnti, double avgSinr) // , double positionX, double positionY
+MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uint64_t destRnti, double avgSnr, double avgSinr) // , double positionX, double positionY
 {
   // NS_LOG_FUNCTION(this);
   if (std::isnan(std::abs(avgSinr)) ){
@@ -425,9 +425,13 @@ MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uin
   // previous value * _ratio_num_samples + new_sinr_value/(num_samples+1)
   if (m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples == 0){
     m_pairsSinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
+    m_pairsSinrMillicarMap[localRnti][destRnti].snr = avgSnr;
   }else{
     m_pairsSinrMillicarMap[localRnti][destRnti].sinr = m_pairsSinrMillicarMap[localRnti][destRnti].sinr* \
   _ratio_num_samples + avgSinr/(m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+1);
+
+  m_pairsSinrMillicarMap[localRnti][destRnti].snr = m_pairsSinrMillicarMap[localRnti][destRnti].snr* \
+  _ratio_num_samples + avgSnr/(m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+1);
   }
   
   
@@ -1254,8 +1258,9 @@ MmWaveEnbNetDevice::BuildMillicarReportRicIndicationMessageCucp(std::string plmI
               double sinrPeer = 10 * std::log10 (it->first.sinr); // we do it to scale the measured data
               double convertedSinrPeer = L3RrcMeasurements::ThreeGppMapSinr (sinrPeer);
               NS_LOG_DEBUG("Rnti " << it->second << " sinr real " << it->first.sinr
-              << " sinr peer " << sinrPeer <<  
-              " converted sinr " << convertedSinrPeer << " & mcs " << +it->first.mcs);
+                            << " sinr peer " << sinrPeer 
+                            << " converted sinr " << convertedSinrPeer 
+                            << " & mcs " << +it->first.mcs);
               l3RrcMeasurementNeigh->AddNeighbourCellMeasurementMcs (it->second, convertedSinrPeer, it->first.mcs);
           
             }

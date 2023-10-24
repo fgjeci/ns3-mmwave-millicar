@@ -30,6 +30,12 @@ typedef std::pair<uint64_t, uint64_t> millicarPairDevices_t;
 
 namespace millicar {
 
+struct SinrReportStruct
+{
+    double snr {0};         //!< snr
+    double sinr {0}; //!sinr
+};
+
 class MmWaveSidelinkPhy : public Object
 {
 
@@ -164,6 +170,17 @@ public:
 
   void SetPropagationLossModel(Ptr<PropagationLossModel> model);
 
+  void DoDecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti);
+
+  // bool DoNeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold);
+
+  std::pair<const uint64_t, double> DoGetBestRelayNeighbor();
+  
+  double DoGetDirectLinkSignalStrength(uint16_t rntiDest);
+
+  void DoUpdateDecentralizedFullRelayPath(uint16_t destRnti, uint16_t interRnti);
+
+  void UpdateDecentralizedRelayPath(uint16_t rnti);
   // end modification
 
   void
@@ -261,7 +278,7 @@ private:
   TracedCallback<uint16_t, uint16_t, uint8_t, uint32_t, double> m_slSinrReportTrace; // , double, double
 
   // device rnti, peer rnti, sinr
-  TracedCallback<uint16_t, uint64_t, double> m_notifyMillicarPairsSinrTrace;
+  TracedCallback<uint16_t, uint64_t, double, double> m_notifyMillicarPairsSinrTrace;
 
   MmWaveSidelinkPhySapUser* m_phySapUser; //!< Sidelink PHY SAP user
   MmWaveSidelinkPhySapProvider* m_phySapProvider; //!< Sidelink PHY SAP provider
@@ -274,7 +291,8 @@ private:
   std::map<uint64_t, Ptr<NetDevice>> m_deviceMap; //!< map containing the <rnti, device> pairs of the nodes we want to communicate with
 
 
-  std::map<uint64_t, double> m_sinrMillicarPairDevicesMap;
+  std::map<uint64_t, SinrReportStruct> m_sinrMillicarPairDevicesMap;
+  // double m_decentralizedRelaySnr;
 
   Callback<void, uint16_t, std::map<uint64_t, double>> m_sinrMapDeviceForwardCallback;
   
@@ -313,6 +331,9 @@ private:
 
   uint16_t m_lastCommuncatingDeviceRnti{UINT16_MAX};
 
+  bool m_snrReport;
+  bool m_decentralizedRelay;
+
   
   // end modification
 
@@ -333,6 +354,16 @@ public:
   void PrepareForReception (uint16_t rnti) override;
 
   Ptr<MmWaveSidelinkSpectrumPhy> GetSpectrum () const override;
+  
+  // bool NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold) override;
+
+  void DecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti) override;
+
+  std::pair<const uint64_t, double> GetBestRelayNeighbor() override;
+
+  double GetDirectLinkSignalStrength(uint16_t destinationRnti) override;
+
+  void UpdateDecentralizedFullRelayPath(uint16_t destRnti, uint16_t interRnti) override;
 
 private:
   Ptr<MmWaveSidelinkPhy> m_phy;

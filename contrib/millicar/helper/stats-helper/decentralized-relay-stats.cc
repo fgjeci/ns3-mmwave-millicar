@@ -16,7 +16,7 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-#include "sinr-report-stats.h"
+#include "decentralized-relay-stats.h"
 
 #include <ns3/rng-seed-manager.h>
 #include <ns3/abort.h>
@@ -28,74 +28,74 @@
 
 namespace ns3 {
 namespace mmwave {
-SinrReportStats::SinrReportStats ()
+DecentralizedRelayStats::DecentralizedRelayStats ()
 {
 }
 
 void
-SinrReportStats::SetDb (SQLiteOutput *db, const std::string & tableName)
+DecentralizedRelayStats::SetDb (SQLiteOutput *db, const std::string & tableName)
 {
   m_db = db;
   m_tableName = tableName;
 
   bool ret;
 
-  // drop table 
-  // ret = m_db->SpinExec("DROP TABLE IF EXISTS " + tableName + ";");
-  // NS_ASSERT (ret);
-
   ret = m_db->SpinExec ("CREATE TABLE IF NOT EXISTS " + tableName + "(" +
-                        "SourceRnti INTEGER NOT NULL,"
+                        "Frame INTEGER NOT NULL,"
+                        "SubFrame INTEGER NOT NULL,"
+                        "Slot INTEGER NOT NULL,"
                         "Rnti INTEGER NOT NULL,"
-                        "NumSym INTEGER NOT NULL,"
-                        "snr DOUBLE NOT NULL,"
-                        "sinr DOUBLE NOT NULL,"
-                        "tbSize INTEGER NOT NULL,"
-                        "Seed INTEGER NOT NULL,"
-                        "Run INTEGER NOT NULL,"
-                        "TimeStamp DOUBLE NOT NULL);");
+                        "DestRnti INTEGER NOT NULL,"
+                        "IntermediateRnti INTEGER NOT NULL,"
+                        "directLinkSnr DOUBLE NOT NULL,"
+                        "bestLinkSnr DOUBLE NOT NULL,"
+					              "Seed INTEGER NOT NULL,"
+						            "Run INTEGER NOT NULL,"
+					              "TimeStamp DOUBLE NOT NULL);");
 		  //                        "Run INTEGER NOT NULL);");
   NS_ASSERT (ret);
 
-  SinrReportStats::DeleteWhere (m_db, RngSeedManager::GetSeed (),
+  DecentralizedRelayStats::DeleteWhere (m_db, RngSeedManager::GetSeed (),
                                 RngSeedManager::GetRun(), 
                                 // static_cast<uint32_t> (MpiInterface::GetSystemId ()),
                                 tableName);
 }
 
 void
-SinrReportStats::SaveSinr (uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, uint32_t tbSize, double snr, double sinr)
+DecentralizedRelayStats::SaveDecentralizedRelayReport (uint16_t frame, uint8_t subframe, uint8_t slot, 
+                                    uint16_t rnti, uint16_t destRnti, uint16_t intermediateRnti, 
+                                    double directLinkSnr, double bestLinkSnr)
 {
 //	NS_UNUSED (power);
 //	NS_LOG_UNCOND("Saving sinr " << cellId << " " << rnti<< " " << power<< " " << avgSinr << " " << bwpId);
-	SinrResultCache c;
-	c.timeInstance = Simulator::Now();
-	c.sourceRnti = sourceRnti;
+	DecentralizedRelayCache c;
+  c.frame=frame;
+  c.subframe=subframe;
+  c.slot=slot;
 	c.rnti = rnti;
-	c.numSym = numSym;
-	c.sinr = sinr;
-  c.snr = snr;
-	c.tbSize = tbSize;
+  c.destRnti = destRnti;
+  c.intermediateRnti = intermediateRnti;
+	c.directLinkSnr = directLinkSnr;
+	c.bestLinkSnr = bestLinkSnr;
+	c.timeInstance = Simulator::Now();
 
-	m_sinrCache.emplace_back (c);
-
-//  m_sinrCache.emplace_back (SinrResultCache (cellId, bwpId, rnti, avgSinr));
+	m_decentralizedRelayCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sinrCache.size () * sizeof (SinrResultCache) > 1000)
+  if (m_decentralizedRelayCache.size () * sizeof (DecentralizedRelayCache) > 10)
     {
       WriteCache ();
     }
 }
 
 void
-SinrReportStats::EmptyCache()
+DecentralizedRelayStats::EmptyCache()
 {
   WriteCache ();
 }
 
 void
-SinrReportStats::DeleteWhere (SQLiteOutput *p, uint32_t seed,
+DecentralizedRelayStats::DeleteWhere (SQLiteOutput *p, uint32_t seed,
                               uint32_t run, const std::string &table)
 {
   bool ret;
@@ -110,41 +110,45 @@ SinrReportStats::DeleteWhere (SQLiteOutput *p, uint32_t seed,
   NS_ABORT_IF (ret == false);
 }
 
-void SinrReportStats::WriteCache ()
+void DecentralizedRelayStats::WriteCache ()
 {
   bool ret = m_db->SpinExec ("BEGIN TRANSACTION;");
-  for (const auto & v : m_sinrCache)
+  for (const auto & v : m_decentralizedRelayCache)
     {
 //	  NS_LOG_UNCOND("Writing cache " << v.cellId << " " << v.rnti<< " " << v.power<< " " << v.avgSinr << " " << v.bwpId);
       sqlite3_stmt *stmt;
-      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?);");
+      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?);");
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 1, v.sourceRnti);
+      ret = m_db->Bind (stmt, 1, static_cast<uint32_t> (v.frame));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 2, v.rnti);
+      ret = m_db->Bind (stmt, 2, static_cast<uint32_t> (v.subframe));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 3, static_cast<uint32_t>(v.numSym));
+      ret = m_db->Bind (stmt, 3, static_cast<uint32_t> (v.slot));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 4, v.snr); // static_cast<double> (
+      ret = m_db->Bind (stmt, 4, v.rnti);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 5, v.sinr); // static_cast<double> (
+      ret = m_db->Bind (stmt, 5, v.destRnti);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 6, static_cast<uint32_t>(v.tbSize));
+      ret = m_db->Bind (stmt, 6, v.intermediateRnti);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 7, RngSeedManager::GetSeed ());
+      ret = m_db->Bind (stmt, 7, v.directLinkSnr);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 8, static_cast<uint32_t> (RngSeedManager::GetRun ()));
+      ret = m_db->Bind (stmt, 8, v.bestLinkSnr); // static_cast<double> (
+      NS_ASSERT (ret);
+      ret = m_db->Bind (stmt, 9, RngSeedManager::GetSeed ());
+      NS_ASSERT (ret);
+      ret = m_db->Bind (stmt, 10, static_cast<uint32_t> (RngSeedManager::GetRun ()));
       NS_ASSERT (ret);
       // ret = m_db->Bind (stmt, 9, static_cast<uint32_t> (MpiInterface::GetSystemId ()));
       // NS_ASSERT (ret);
       // insert the timestamp
-      ret = m_db->Bind (stmt, 9, v.timeInstance.GetSeconds());
+      ret = m_db->Bind (stmt, 11, v.timeInstance.GetSeconds());
       NS_ASSERT (ret);
 
       ret = m_db->SpinExec (stmt);
       NS_ASSERT (ret);
     }
-  m_sinrCache.clear ();
+  m_decentralizedRelayCache.clear ();
   ret = m_db->SpinExec ("END TRANSACTION;");
   NS_ASSERT (ret);
 }

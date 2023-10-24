@@ -301,6 +301,7 @@ int main (int argc, char *argv[])
   mmwave::SendPacketStats relayPacketStats;
   mmwave::MacBsrStats macBsrStats;
   mmwave::DlSchedulingStats dlSchedulingStats ;
+  mmwave::DecentralizedRelayStats decentralizedRelayStats ;
 
   sinrReportStats.SetDb(&db, "sinrReportStats");
   allPairssinrReportStats.SetDb(&db, "allPairsReportStats");
@@ -308,6 +309,7 @@ int main (int argc, char *argv[])
   relayPacketStats.SetDb(&db, "relayPacketsReportStats");
   macBsrStats.SetDb(&db, "macBsr");
   dlSchedulingStats.SetDb(&db, "dlSchedulingStats");
+  decentralizedRelayStats.SetDb(&db, "decentralizedRelayStats");
   
 
   // create the nodes
@@ -473,7 +475,6 @@ int main (int argc, char *argv[])
   // uemobilityGroup2 = uemobility;
   uemobility.SetPositionAllocator (uePositionAlloc);
   uemobility.Install (ueNodesRandom);
-
   
   rho = 20;
   center_x = 90;
@@ -517,7 +518,6 @@ int main (int argc, char *argv[])
   uemobilityGroup2.Install (ueNodesGroup2Random);
 
   // group 3
-
   rho = 20;
   center_x = 40;
   center_y = 60;
@@ -1589,13 +1589,13 @@ int main (int argc, char *argv[])
   //   updApps.Add(udpApp_r);
   // }
   
-  updApps.Start (MilliSeconds (0));
+  updApps.Start (MilliSeconds (100));
   updApps.Stop (MilliSeconds (endTime));
-  echoApps.Start (MilliSeconds (0));
+  echoApps.Start (MilliSeconds (100));
   echoApps.Stop (MilliSeconds (endTime));
-  packetSinkApps.Start (MilliSeconds (0));
+  packetSinkApps.Start (MilliSeconds (100));
   packetSinkApps.Stop (MilliSeconds (endTime));
-  bulkApps.Start (MilliSeconds (0));
+  bulkApps.Start (MilliSeconds (100));
   bulkApps.Stop (MilliSeconds (endTime));
   NS_LOG_DEBUG("Creating sink apps");
   // end modification
@@ -1615,25 +1615,28 @@ int main (int argc, char *argv[])
   for (auto ueDeviceIt = allUeDevices.Begin();ueDeviceIt != allUeDevices.End(); ++ueDeviceIt){
     Ptr<millicar::MmWaveSidelinkPhy> uePhy = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(*ueDeviceIt)->GetPhyMillicar();
     uePhy->TraceConnectWithoutContext("SlSinrReport",
-											   MakeBoundCallback(&EfStatsHelper::SinrReportCallback, &sinrReportStats));
+                        MakeBoundCallback(&EfStatsHelper::SinrReportCallback, &sinrReportStats));
     uePhy->TraceConnectWithoutContext("NotifyMillicarPairsSinr",
-											   MakeBoundCallback(&EfStatsHelper::AllPeersSinrReportCallback, &allPairssinrReportStats));
+                        MakeBoundCallback(&EfStatsHelper::AllPeersSinrReportCallback, &allPairssinrReportStats));
     
     Ptr<millicar::MmWaveSidelinkMac> ueMac = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(*ueDeviceIt)->GetMacMillicar();
     // activating traces on bsr coming from rlc
     ueMac->TraceConnectWithoutContext("RlcBufferStatus",
-											   MakeBoundCallback(&EfStatsHelper::ReportMacBsr, &macBsrStats));
+                        MakeBoundCallback(&EfStatsHelper::ReportMacBsr, &macBsrStats));
     ueMac->TraceConnectWithoutContext("SchedulingInfo",
-											   MakeBoundCallback(&EfStatsHelper::ReportSchedulingInfo, &dlSchedulingStats ));
+                        MakeBoundCallback(&EfStatsHelper::ReportSchedulingInfo, &dlSchedulingStats ));
+    
+    ueMac->TraceConnectWithoutContext("DecentralizedRelaySnr",
+                        MakeBoundCallback(&EfStatsHelper::DecentralizedRelayReportCallback, &decentralizedRelayStats ));
     
     
     Ptr<mmwave::MmWaveMillicarUeNetDevice> ueDev = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(*ueDeviceIt);
     
     ueDev->TraceConnectWithoutContext("SendPacketReport",
-											   MakeBoundCallback(&EfStatsHelper::SendPacketReportCallback, &sendPacketStats));
+                        MakeBoundCallback(&EfStatsHelper::SendPacketReportCallback, &sendPacketStats));
     
     ueDev->TraceConnectWithoutContext("RelayPacketReport",
-											   MakeBoundCallback(&EfStatsHelper::RelayPacketReportCallback, &relayPacketStats));
+                        MakeBoundCallback(&EfStatsHelper::RelayPacketReportCallback, &relayPacketStats));
     // through this relay all traffic between 1-5 should pass through 6
     // NS_LOG_DEBUG("Setting test relay");
     // if (relayTime>0){
@@ -1689,7 +1692,9 @@ int main (int argc, char *argv[])
 
   // stop ip since we need to see only the layout
   // anim->SetStopTime(MilliSeconds(50));
+
   
+  NS_LOG_DEBUG("Start");
   Simulator::Stop (MilliSeconds (endTime + 1000));
   Simulator::Run ();
   Simulator::Destroy ();
@@ -1698,6 +1703,7 @@ int main (int argc, char *argv[])
   relayPacketStats.EmptyCache();
   allPairssinrReportStats.EmptyCache();
   sinrReportStats.EmptyCache();
+  decentralizedRelayStats.EmptyCache();
 
   std::cout << "----------- Statistics -----------" << std::endl;
   std::cout << "Packets size:\t\t" << packetSize << " Bytes" << std::endl;

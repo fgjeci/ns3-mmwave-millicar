@@ -387,13 +387,14 @@ void
 ParametersConfig::EnableTraces()
 {
 	LogLevel logLevel = (LogLevel)(LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_INFO | LOG_DEBUG | LOG_LEVEL_ALL); //
-	// LogComponentEnable ("EpcX2", LOG_LEVEL_ALL);
+	
 	// LogComponentEnable("LteEnbRrc", LOG_LEVEL_ALL);
 	// LogComponentEnable("LteUeRrc", logLevel);
 	// LogComponentEnable ("MmWaveMillicarHelper", LOG_LEVEL_ALL);
   	LogComponentEnable ("MmWaveMillicarUeNetDevice", LOG_LEVEL_ALL);
-	// LogComponentEnable ("MmWaveSidelinkMac", LOG_LEVEL_ALL);
+	LogComponentEnable ("MmWaveSidelinkMac", LOG_LEVEL_ALL);
 	// LogComponentEnable ("MmWaveSidelinkPhy", LOG_LEVEL_ALL);
+	// LogComponentEnable ("MmWaveSidelinkSpectrumPhy", LOG_LEVEL_ALL);
 	LogComponentEnable ("Vehicular5G", LOG_LEVEL_ALL);
 
 	// LogComponentEnableAll (logLevel);
@@ -401,7 +402,7 @@ ParametersConfig::EnableTraces()
 //   LogComponentEnable ("MmWaveFlexTtiMaxWeightMacScheduler", LOG_LEVEL_ALL);
 // 	LogComponentEnable ("MmWaveFlexTtiMaxRateMacScheduler", LOG_LEVEL_ALL);
   
-  LogComponentEnable ("E2Termination", logLevel);
+//   LogComponentEnable ("E2Termination", logLevel);
 
 //   LogComponentEnable ("LteEnbNetDevice", logLevel);
 //   LogComponentEnable ("MmWaveEnbNetDevice", logLevel);
@@ -410,10 +411,11 @@ ParametersConfig::EnableTraces()
 //   LogComponentEnable ("VideoStreamServerApplication", logLevel);
 //   LogComponentEnable ("MmWaveHelper", logLevel);
 //   LogComponentEnable ("MmWaveVehicularTracesHelper", LOG_LEVEL_ALL);
-//   LogComponentEnable ("MmWaveBearerStatsConnector", LOG_LEVEL_ALL);
+//   LogComponentEnable ("UdpClient", LOG_LEVEL_ALL);
+//   LogComponentEnable ("UdpServer", logLevel);
 //   LogComponentEnable ("MmWavePhyMacCommon", LOG_LEVEL_ALL);
 
-	// LogComponentEnable ("DeterministicVehicleChannelConditionModel", logLevel);
+	
 	// LogComponentEnable ("NodeV2vChannelConditionModel", logLevel);
 	// LogComponentEnable("SpectrumModel", logLevel);
 
@@ -429,7 +431,8 @@ ParametersConfig::EnableTraces()
 	// LogComponentEnable ("BeamformingHelperBase", logLevel);
 	// LogComponentEnable ("IdealBeamformingAlgorithm", logLevel);
 	// LogComponentEnable ("PhasedArrayModel", logLevel);
-	// LogComponentEnable ("PPBPApplication", logLevel);
+	// LogComponentEnable ("DefaultSimulatorImpl", logLevel);
+	// LogComponentEnable ("MpiInterface", logLevel);
 
 	// LogComponentEnable ("LteRlcUm", logLevel);
 	// LogComponentEnable ("LteRlcAm", logLevel);
@@ -439,14 +442,15 @@ ParametersConfig::EnableTraces()
 	// LogComponentEnable("LtePdcp", logLevel);
 	// LogComponentEnable ("BulkSendApplication", logLevel);
 
-	// LogComponentEnable ("LteInterference", logLevel);
+	// LogComponentEnable ("GrantedTimeWindowMpiInterface", logLevel);
+	// LogComponentEnable ("NullMessageSimulatorImpl", logLevel);
+	// LogComponentEnable ("NullMessageMpiInterface", logLevel);
 	// LogComponentEnable ("PacketSink", logLevel);
 
-	// LogComponentEnable ("LteRlc", logLevel);
-	// LogComponentEnable ("ComponentCarrierUe", logLevel);
+	
 	// LogComponentEnable ("SimpleUeComponentCarrierManager", logLevel);
 
-	// LogComponentEnable ("PointToPointNetDevice", logLevel);
+	
 	
 }
 

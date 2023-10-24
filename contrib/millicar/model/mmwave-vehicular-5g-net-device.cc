@@ -220,6 +220,12 @@ MmWaveMillicarUeNetDevice::GetTypeId(void)
                           PointerValue (),
                           MakePointerAccessor (&MmWaveMillicarUeNetDevice::m_phyTraceHelperMillicar),
                           MakePointerChecker <millicar::MmWaveVehicularTracesHelper> ())
+            // .AddAttribute ("DecentralizedRelayCheckPeriodicity", 
+            //               "The periodicity in milliseconds which we check if a relay is ",
+            //               UintegerValue (30000),
+            //               MakeUintegerAccessor (&MmWaveMillicarUeNetDevice::SetMtuMillicar,
+            //                                       &MmWaveMillicarUeNetDevice::GetMtuMillicar),
+            //               MakeUintegerChecker<uint16_t> ())
     ;
     return tid;
 }
@@ -337,6 +343,36 @@ MmWaveMillicarUeNetDevice::RegisterRicControlMessage(uint16_t localRnti, uint16_
   }
 
   PrintRelay();
+}
+
+void
+MmWaveMillicarUeNetDevice::DecentralizedAddRelayPath(uint16_t localRnti, uint16_t destRnti, uint16_t intermediateRnti){
+  NS_LOG_FUNCTION(this << localRnti << " " << destRnti << " intermediate " << intermediateRnti);
+
+  m_relayPaths[localRnti][destRnti] = intermediateRnti;
+  m_relayPaths[destRnti][localRnti] = intermediateRnti;
+}
+
+void
+MmWaveMillicarUeNetDevice::DecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti){
+  NS_LOG_FUNCTION(this << localRnti << " " << destRnti);
+
+  auto localRntiIt = m_relayPaths.find(localRnti);
+  if (localRntiIt!= m_relayPaths.end()){
+    auto destRntiIt = localRntiIt->second.find(destRnti);
+    if (destRntiIt!= localRntiIt->second.end()){
+      localRntiIt->second.erase(destRntiIt);
+    }
+  }
+
+  auto destRntiIt = m_relayPaths.find(destRnti);
+  if (destRntiIt!= m_relayPaths.end()){
+    auto localRntiIt = destRntiIt->second.find(localRnti);
+    if (localRntiIt!= destRntiIt->second.end()){
+      destRntiIt->second.erase(localRntiIt);
+    }
+  }
+
 }
 
 // modified
@@ -626,8 +662,8 @@ MmWaveMillicarUeNetDevice::ActivateBearerMillicar(const uint8_t bearerId, const 
   uint8_t lcid = bearerId; // set the LCID to be equal to the bearerId
   // future extensions could consider a different mapping
   // and will actually exploit the following map
-  std::cout << "Rnti " << m_macMillicar->GetRnti() << " dest rnti " << destRnti 
-            << " bearerID " << +bearerId << " addr " << dest << std::endl;
+  // std::cout << "Rnti " << m_macMillicar->GetRnti() << " dest rnti " << destRnti 
+  //           << " bearerID " << +bearerId << " addr " << dest << std::endl;
   m_bid2lcidMillicar.insert(std::make_pair(bearerId, lcid));
 
   NS_ASSERT_MSG(m_bearerToInfoMapMillicar.find (bearerId) == m_bearerToInfoMapMillicar.end (),
@@ -737,6 +773,7 @@ MmWaveMillicarUeNetDevice::Receive (Ptr<Packet> p)
 
 void
 MmWaveMillicarUeNetDevice::RegisterReceivedPacketMillicar (Ptr<Packet> p){
+  NS_LOG_FUNCTION(this);
   // std::cout<< "Register data size " << p->GetSize() << std::endl;
   Vector _pos = GetNode()->GetObject<MobilityModel> ()->GetPosition ();
   Ptr<Packet> packet = p->Copy();
@@ -799,15 +836,15 @@ MmWaveMillicarUeNetDevice::ReceiveMillicar (Ptr<Packet> p)
   Ipv4Header ipv4Header;
   p->PeekHeader(ipv4Header);
   // if (std::find(_debug_vecto.begin(), _debug_vecto.end(), GetPhyMillicar()->GetRnti())!= _debug_vecto.end()){
-  NS_LOG_DEBUG("Rec S " << ipv4Header.GetSource() 
-              << " d " << ipv4Header.GetDestination() 
-              << " tag " << packetRelayTag.GetDestinationRnti()
-              << " seq " << p->GetUid()
-              << " peek " << hasRelayTag
-              // << " isrelay " << hasRelayHeader
-              << " size " << p->GetSize()
+  // NS_LOG_DEBUG("Rec S " << ipv4Header.GetSource() 
+  //             << " d " << ipv4Header.GetDestination() 
+  //             << " tag " << packetRelayTag.GetDestinationRnti()
+  //             << " seq " << p->GetUid()
+  //             << " peek " << hasRelayTag
+  //             // << " isrelay " << hasRelayHeader
+  //             << " size " << p->GetSize()
               
-              );
+  //             );
   // }
   
   
@@ -822,12 +859,13 @@ MmWaveMillicarUeNetDevice::ReceiveMillicar (Ptr<Packet> p)
     uint16_t intermediateRnti = packetRelayTag.GetIntermediateRnti();
     Vector _pos = GetNode()->GetObject<MobilityModel> ()->GetPosition ();
     m_relayPacketTrace(p, GetRnti(), _pos);
-    std::cout << "p " << sourceRnti << " " << destinationRnti << " " << intermediateRnti << std::endl;
+    // NS_LOG_DEBUG("relay source " << sourceRnti << " " << destinationRnti << " " << intermediateRnti);
     // uint16_t destinationRnti = packetRelayHeader.GetDestinationRnti();
     // if the destination is not the local rnti we relay otherwise we send it to application layer
     if (destinationRnti!=GetRnti()){
       // means we have to relay the packet 
-      RelayMillicar(p, destinationRnti);
+      // we don't relay the packet just add to the trace
+      // RelayMillicar(p, destinationRnti);
       // this packet is for relay only, thus we do not forward in upper layers
       return;
     }
@@ -882,7 +920,6 @@ MmWaveMillicarUeNetDevice::RelayMillicar (Ptr<Packet> packet, uint16_t destinati
   // Don't remove packet tags, to avoid errors in multi-hop scenarios
   packet->RemoveAllPacketTags (); // remove all tags in case there is any
   // re insert the packet tag
-
 
   // MmWavePacketRelayTag packetRelayTag;
   // packetRelayTag.SetDestinationRnti(destinationRnti);
@@ -970,11 +1007,11 @@ MmWaveMillicarUeNetDevice::SendMillicar (Ptr<Packet> packet, const Address& dest
           // get the bearer info for the intermediate node, since we are sending the packet to
           // this intermediate node
           // if (std::find(_debug_vecto.begin(), _debug_vecto.end(), GetPhyMillicar()->GetRnti())!= _debug_vecto.end()){
-            NS_LOG_DEBUG("Sr " << GetRnti() <<
-            " dr " << bearerInfo->m_rnti << " ir " << intermediateNodeRnti
-            << " tag " << packetRelayTag.GetDestinationRnti()
-            // << " header " << packetRelayHeader.GetDestinationRnti()
-            );
+            // NS_LOG_DEBUG("Sr " << GetRnti() <<
+            // " dr " << bearerInfo->m_rnti << " ir " << intermediateNodeRnti
+            // << " tag " << packetRelayTag.GetDestinationRnti()
+            // // << " header " << packetRelayHeader.GetDestinationRnti()
+            // );
           // }
           
           // NS_LOG_DEBUG("Old lcid " << +lcid << " new lcid " << +bearerIt->first);
@@ -1016,17 +1053,17 @@ MmWaveMillicarUeNetDevice::SendMillicar (Ptr<Packet> packet, const Address& dest
   // end modification
 
   // if (std::find(_debug_vecto.begin(), _debug_vecto.end(), GetPhyMillicar()->GetRnti())!= _debug_vecto.end()){
-  NS_LOG_DEBUG("send S " << ipv4Header.GetSource() 
-                << " d " << ipv4Header.GetDestination() 
-                << " tag " << packetRelayTag.GetDestinationRnti()
-                // << " bid " << +bid
-                // << " id " << id
-                // << " size header " << ipv4Size
-                // << " packet size " << packet->GetSize()
-                << " seq " << packet->GetUid()
-                << " lr " << GetPhyMillicar()->GetRnti()
+  // NS_LOG_DEBUG("send S " << ipv4Header.GetSource() 
+  //               << " d " << ipv4Header.GetDestination() 
+  //               << " tag " << packetRelayTag.GetDestinationRnti()
+  //               // << " bid " << +bid
+  //               // << " id " << id
+  //               // << " size header " << ipv4Size
+  //               // << " packet size " << packet->GetSize()
+  //               << " seq " << packet->GetUid()
+  //               << " lr " << GetPhyMillicar()->GetRnti()
                 
-                );
+  //               );
   // }
   m_sendPacketTrace(packet, GetRnti(), 
                     m_bearerToInfoMapMillicar.find (bid)->second->m_rnti, // destination

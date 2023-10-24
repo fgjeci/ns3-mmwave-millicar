@@ -26,6 +26,7 @@
 #include <ns3/object-factory.h>
 #include <ns3/event-id.h>
 #include <ns3/spectrum-value.h>
+
 #include <ns3/mobility-model.h>
 #include <ns3/packet.h>
 #include <ns3/nstime.h>
@@ -42,6 +43,7 @@
 #include "ns3/mmwave-control-messages.h"
 #include <ns3/mmwave-error-model.h>
 #include "ns3/mmwave-beamforming-model.h"
+#include "ns3/mmwave-harq-phy.h"
 
 namespace ns3 {
 
@@ -80,6 +82,12 @@ typedef Callback< void, Ptr<Packet> > MmWavePhyRxDataEndOkCallback;
 // modified 
 // insert thisdevicernti uint16_t
 typedef Callback< void, const SpectrumValue&, uint16_t, uint8_t, uint32_t, uint8_t, bool> MmWaveSidelinkSinrReportCallback;
+/**
+ * This method is used by the LteSpectrumPhy to notify the PHY about
+ * the status of a certain DL HARQ process
+ */
+typedef Callback<void, mmwave::DlHarqInfo> MmWavePhyDlHarqFeedbackCallback;
+
 // end modification
 
 
@@ -275,7 +283,11 @@ public:
   void SetBeamformingModel (Ptr<mmwave::MmWaveBeamformingModel> beamformingModel);
 
   // modified
+  void SetPhyDlHarqFeedbackCallback(MmWavePhyDlHarqFeedbackCallback c);
+  
   Ptr<mmwave::MmWaveBeamformingModel> GetBeamformingModel ();
+
+  void SetHarqPhyModule(Ptr<mmwave::MmWaveHarqPhy> harq);
   // end modification
 
 private:
@@ -324,6 +336,11 @@ private:
 
   bool m_dataErrorModelEnabled; ///< when true (default) the phy error model is enabled
   bool m_ctrlErrorModelEnabled; ///< when true (default) the phy error model is enabled for DL ctrl frame
+
+  // modified
+  Ptr<mmwave::MmWaveHarqPhy> m_harqPhyModule;
+  MmWavePhyDlHarqFeedbackCallback m_phyDlHarqFeedbackCallback;
+  // end modification
 
   EventId m_endTxEvent; ///< end transmit event
   EventId m_endRxDataEvent; ///< end receive data event

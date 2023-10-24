@@ -16,13 +16,14 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-#ifndef SINR_REPORT_STATS_H
-#define SINR_REPORT_STATS_H
+#ifndef DECENTRALIZED_REPORT_STATS_H
+#define DECENTRALIZED_REPORT_STATS_H
 
 #include <inttypes.h>
 #include <vector>
 
 #include <ns3/sqlite-output.h>
+#include <ns3/mmwave-phy-mac-common.h>
 
 #include <ns3/core-module.h>
 
@@ -39,13 +40,13 @@ namespace mmwave {
  * \see SaveSinr
  * \see EmptyCache
  */
-class SinrReportStats
+class DecentralizedRelayStats
 {
 public:
   /**
    * \brief Constructor
    */
-  SinrReportStats ();
+  DecentralizedRelayStats ();
 
   /**
    * \brief Install the output dabase.
@@ -67,7 +68,7 @@ public:
    * the same name, also clean existing values that has the same
    * Seed/Run pair.
    */
-  void SetDb (SQLiteOutput *db, const std::string& tableName = "sinrReportStats");
+  void SetDb (SQLiteOutput *db, const std::string& tableName = "decentralizedRelayStats");
 
   /**
    * \brief Store the SINR values
@@ -80,7 +81,9 @@ public:
    * The method saves the result in a cache, and if it is necessary, writes the
    * cache to disk before emptying it.
    */
-  void SaveSinr (uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, uint32_t tbSize, double snr, double sinr);
+  void SaveDecentralizedRelayReport (uint16_t frame, uint8_t subframe, uint8_t slot, 
+                                    uint16_t rnti, uint16_t destRnti, uint16_t intermediateRnti, 
+                                    double directLinkSnr, double bestLinkSnr);
 
   /**
    * \brief Force the cache write to disk, emptying the cache itself.
@@ -93,27 +96,21 @@ private:
 
   void WriteCache ();
 
-  struct SinrResultCache
+  struct DecentralizedRelayCache
   {
-//    SinrResultCache (uint16_t c, uint16_t b, uint16_t r, double s)
-//      : cellId (c), bwpId (b), rnti (r), avgSinr (s), timeInstance(Simulator::Now()) {}
-//    Time timeInstance {0};
-//    uint16_t cellId {0};
-//    uint16_t bwpId {0};
-//    uint16_t rnti {0};
-//    double avgSinr {0.0};
-
     Time timeInstance;
-    uint16_t sourceRnti;
+    uint32_t frame;
+    uint8_t subframe;
+    uint8_t slot;
     uint16_t rnti;
-    uint8_t numSym;
-    uint32_t tbSize;
-    double sinr;
-    double snr;
+    uint16_t destRnti;
+    uint16_t intermediateRnti;
+    double directLinkSnr;
+    double bestLinkSnr;
   };
 
   SQLiteOutput *m_db;                         //!< DB pointer
-  std::vector<SinrResultCache> m_sinrCache;   //!< Result cache
+  std::vector<DecentralizedRelayCache> m_decentralizedRelayCache;   //!< Result cache
   std::string m_tableName;                    //!< Table name
 };
 }

@@ -57,7 +57,19 @@ public:
 
   virtual Ptr<MmWaveSidelinkSpectrumPhy> GetSpectrum() const = 0;
 
+  // modified
 
+  // virtual bool NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold) = 0;
+
+  virtual std::pair<const uint64_t, double> GetBestRelayNeighbor() = 0;
+
+  virtual double GetDirectLinkSignalStrength(uint16_t destinationRnti) = 0;
+
+  virtual void UpdateDecentralizedFullRelayPath(uint16_t destRnti, uint16_t interRnti) = 0;
+
+  virtual void DecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti) = 0;
+
+  // end modification
 
 };
 

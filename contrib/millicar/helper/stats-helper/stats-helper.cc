@@ -49,14 +49,84 @@ void
 EfStatsHelper::SinrReportCallback (mmwave::SinrReportStats *stats, uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, uint32_t tbSize,  double sinr)
 {
 		// NS_LOG_UNCOND("saving sinr" << sourceCellId);
-  	stats->SaveSinr (sourceRnti, rnti, numSym, tbSize, sinr);
+  	stats->SaveSinr (sourceRnti, rnti, numSym, tbSize, 0, sinr);
 }
 
 void
-EfStatsHelper::AllPeersSinrReportCallback (mmwave::SinrReportStats *stats, uint16_t sourceRnti, uint64_t rnti,  double sinr)
+EfStatsHelper::AllPeersSinrReportCallback (mmwave::SinrReportStats *stats, uint16_t sourceRnti, uint64_t rnti,  double snr,  double sinr)
 {
 		// NS_LOG_UNCOND("saving sinr" << sourceCellId);
-  	stats->SaveSinr (sourceRnti, (uint16_t)rnti, 0, 0, sinr);
+  	stats->SaveSinr (sourceRnti, (uint16_t)rnti, 0, 0, snr, sinr);
+}
+
+void
+EfStatsHelper::DecentralizedRelayReportCallback (mmwave::DecentralizedRelayStats *relayStats, mmwave::SfnSf sfnsf, uint16_t rnti, uint16_t destRnti, uint16_t intermediateRnti, 
+							double directLinkSnr, double bestLinkSnr)
+{
+		// NS_LOG_UNCOND("saving sinr" << sourceCellId);
+  	relayStats->SaveDecentralizedRelayReport (sfnsf.m_frameNum, sfnsf.m_sfNum, sfnsf.m_slotNum, rnti, (uint16_t)destRnti, intermediateRnti, directLinkSnr, bestLinkSnr);
+}
+
+void
+EfStatsHelper::PacketRelayLatencyReportCallback (mmwave::RelayLatencyStats *stats, Ptr<Packet> p, 
+                                        uint16_t localRnti, uint16_t sourceRnti, 
+                                        uint16_t destRnti, // uint16_t intermediateRnti, 
+                                        // Vector pos ,const ns3::Address & from, const ns3::Address & to
+                                        uint8_t traceSource
+                                        )
+{
+		// NS_LOG_UNCOND("saving sinr" << sourceCellId);
+    Ptr<Packet> packet = p->Copy();
+
+    // Ipv4Header ipv4Header;
+    // uint32_t ipv4Size = packet->RemoveHeader(ipv4Header);
+
+    uint32_t packetSize = packet->GetSize();
+
+    // uint8_t protocol = ipv4Header.GetProtocol();
+    // uint16_t payloadSize = ipv4Header.GetPayloadSize();
+
+    // if (protocol == UdpL4Protocol::PROT_NUMBER && payloadSize >= 8)
+    // {
+      // UdpHeader udpHeader;
+      // packet->RemoveHeader(udpHeader);
+
+      // SeqTsHeader seqTsHeader;
+      // packet->RemoveHeader(seqTsHeader);
+      // set again the header
+      // packet->AddHeader(ipv4Header);
+
+      MmWaveMacPacketRelayTag packetRelayTag;
+      bool hasTag = packet->PeekPacketTag(packetRelayTag);
+
+      // std::stringstream sa, da;
+      // sa << ipv4Header.GetSource();
+      // da << ipv4Header.GetDestination();
+      // sa << from;
+      // da << to;
+      // std::string sourceAddress = sa.str();
+      // std::string destAddress = da.str();
+
+      // uint16_t destinationRnti = packetRelayTag.GetDestinationRnti();
+      // uint16_t _sourceRnti = packetRelayTag.GetSourceRnti();
+      // uint16_t _intermediateRnti = packetRelayTag.GetIntermediateRnti();
+      
+      uint64_t packetId = packet->GetUid();
+
+      // uint32_t seqNumber = seqTsHeader.GetSeq();
+      double txTime = packetRelayTag.GetTs().GetSeconds();
+
+      // std::cout << "Sequence number " << seqNumber << " txtime " << txTime << std::endl;
+
+      stats->SaveRelayLatency (sourceRnti, destRnti, localRnti, // intermediateRnti, 
+                            // sourceAddress, destAddress
+                            // , pos, 
+                            packetId, // seqNumber, 
+                            txTime, packetSize,
+                            traceSource
+                            );
+
+    // }
 }
 
 void

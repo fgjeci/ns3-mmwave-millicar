@@ -133,7 +133,9 @@ class MmWaveMillicarUeNetDevice : public MmWaveUeNetDevice
 
     void TestRelay(uint16_t localRnti, uint16_t destRnti, uint16_t intermediateRnti);
 
-    
+    void DecentralizedAddRelayPath(uint16_t localRnti, uint16_t destRnti, uint16_t intermediateRnti);
+
+    void DecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti);
 
     // Ptr<MmWaveUePhy> GetPhy(void) const;
 
@@ -236,6 +238,12 @@ class MmWaveMillicarUeNetDevice : public MmWaveUeNetDevice
     std::map<uint16_t, std::map<uint16_t, uint16_t>> m_relayPaths;
 
     bool RelayMillicar (Ptr<Packet> packet, uint16_t destinationRnti);
+
+    // modified
+    void UpdateDecentralizedRelayPath(mmwave::SfnSf timingInfo, uint16_t rnti);
+
+    void UpdateDecentralizedAllRelayPaths(mmwave::SfnSf timingInfo);
+    // end modification
 
 
     // Ptr<MmWaveEnbNetDevice> m_targetEnb;

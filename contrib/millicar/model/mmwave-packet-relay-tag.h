@@ -5,6 +5,7 @@
 #include <ns3/ipv4-header.h>
 #include <ns3/ptr.h>
 #include "ns3/packet.h"
+#include "ns3/nstime.h"
 
 namespace ns3
 {
@@ -130,6 +131,76 @@ class MmWavePacketRelayTag : public Tag
     
     uint16_t m_intermediateRnti {UINT16_MAX};
 };
+
+class MmWaveMacPacketRelayTag : public Tag
+{
+  public:
+    /**
+     * \brief Get the type ID.
+     * \return the object TypeId
+     */
+    static TypeId GetTypeId(void);
+    virtual TypeId GetInstanceTypeId(void) const;
+
+    MmWaveMacPacketRelayTag();
+
+    virtual void Serialize(TagBuffer i) const;
+    virtual void Deserialize(TagBuffer i);
+    virtual uint32_t GetSerializedSize() const;
+    virtual void Print(std::ostream& os) const;
+
+    /**
+     * @brief Get destination rnti
+     * 
+     */
+    uint16_t GetDestinationRnti() const;
+    /**
+     * @brief Get destination rnti
+     * 
+     */
+    uint16_t GetSourceRnti() const;
+
+    /**
+     * @brief Get destination rnti
+     * 
+     */
+    uint16_t GetIntermediateRnti() const;
+    
+
+    /**
+     * @brief Set destination Rnti
+     * 
+     */
+    void SetDestinationRnti(uint16_t destinationRnti);
+
+    /**
+     * @brief Set destination Rnti
+     * 
+     */
+    void SetIntermediateRnti(uint16_t intermediateRnti);
+
+    /**
+     * @brief Set source Rnti
+     * 
+     */
+    void SetSourceRnti(uint16_t sourceRnti);
+
+    /**
+     * \return the time stamp
+     */
+    Time GetTs() const;
+
+  private:
+
+    uint16_t m_destinationRnti {UINT16_MAX};
+    uint64_t m_ts;  //!< Timestamp
+
+    uint16_t m_sourceRnti {UINT16_MAX};
+    
+    uint16_t m_intermediateRnti {UINT16_MAX};
+};
+
+
 
 } // namespace ns3
 

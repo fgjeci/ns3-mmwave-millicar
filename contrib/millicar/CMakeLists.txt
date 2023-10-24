@@ -19,6 +19,8 @@ set(source_files
     helper/stats-helper/send-packet-stats.cc
     helper/stats-helper/ef-mac-rlc-buffer-status.cc
     helper/stats-helper/ef-scheduling-stats.cc
+    helper/stats-helper/decentralized-relay-stats.cc
+    helper/stats-helper/relay-latency-stats.cc
     helper/parameters-config.cc
     # modified
     model/node-v2v-channel-condition-model.cc
@@ -54,6 +56,8 @@ set(header_files
     helper/stats-helper/sinr-report-stats.h
     helper/stats-helper/stats-helper.h
     helper/stats-helper/send-packet-stats.h
+    helper/stats-helper/decentralized-relay-stats.h
+    helper/stats-helper/relay-latency-stats.h
     helper/parameters-config.h
     model/node-v2v-channel-condition-model.h
     model/three-gpp-v2v-blockage-channel-condition-model.h

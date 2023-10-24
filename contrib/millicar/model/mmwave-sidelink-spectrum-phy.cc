@@ -88,7 +88,9 @@ MmWaveSidelinkSpectrumPhy::MmWaveSidelinkSpectrumPhy ()
 
 MmWaveSidelinkSpectrumPhy::~MmWaveSidelinkSpectrumPhy ()
 {
-
+  // modified
+  m_harqPhyModule = 0;
+  // end modification
 }
 
 TypeId
@@ -408,64 +410,131 @@ MmWaveSidelinkSpectrumPhy::EndRxData ()
     for (std::list<TbInfo_t>::const_iterator i = m_rxTransportBlock.begin ();
          i != m_rxTransportBlock.end (); ++i)
      {
-       // Here we need to initialize an empty harqInfoList since it is mandatory input
-       // for the method. Since the vector is empty, no harq procedures are triggered (as we want)
-       const MmWaveErrorModel::MmWaveErrorModelHistory& harqInfoList {};
 
-       // create the error model
-       ObjectFactory emFactory;
-       emFactory.SetTypeId (m_errorModelType);
-       Ptr<MmWaveErrorModel> errorModel = DynamicCast<MmWaveErrorModel> (emFactory.Create ());
-       
-       NS_LOG_DEBUG ("average sinr " << 10*log10 (sinrAvg) << " MCS " <<  (uint16_t)(*i).mcs);
-       Ptr<MmWaveErrorModelOutput> tbStats = errorModel->GetTbDecodificationStats (m_sinrPerceived, 
-                                                                                     (*i).rbBitmap, 
-                                                                                     (*i).size, 
-                                                                                     (*i).mcs, 
-                                                                                     harqInfoList);
+      // modified
+      // added the retrieving of harq history
+      // Retrieve HARQ history
+      // std::function<const MmWaveErrorModel::MmWaveErrorModelHistory&(uint16_t, uint8_t)>
+      //     RetrieveHistory = std::bind(&MmWaveHarqPhy::GetHarqProcessInfoDl,
+      //                                 m_harqPhyModule,
+      //                                 std::placeholders::_1,
+      //                                 std::placeholders::_2);
+      
+      // end modification
 
 
-       bool corrupt = m_random->GetValue () > tbStats->m_tbler ? false : true;
+      // Here we need to initialize an empty harqInfoList since it is mandatory input
+      // for the method. Since the vector is empty, no harq procedures are triggered (as we want)
+      // original
+      const MmWaveErrorModel::MmWaveErrorModelHistory& harqInfoList {};
+      // modfiied
+      // the second 
+      // const MmWaveErrorModel::MmWaveErrorModelHistory& harqInfoList =
+      //           RetrieveHistory((*i).rnti, 0);
+      // end modification
+
+      // create the error model
+      ObjectFactory emFactory;
+      emFactory.SetTypeId (m_errorModelType);
+      Ptr<MmWaveErrorModel> errorModel = DynamicCast<MmWaveErrorModel> (emFactory.Create ());
+      
+      NS_LOG_DEBUG ("average sinr " << 10*log10 (sinrAvg) << " MCS " <<  (uint16_t)(*i).mcs);
+      Ptr<MmWaveErrorModelOutput> tbStats = errorModel->GetTbDecodificationStats (m_sinrPerceived, 
+                                                                                    (*i).rbBitmap, 
+                                                                                    (*i).size, 
+                                                                                    (*i).mcs, 
+                                                                                    harqInfoList);
+
+
+      bool corrupt = m_random->GetValue () > tbStats->m_tbler ? false : true;
 
       // trigger callbacks
-       for (auto& it : m_slSinrReportCallback)
+      for (auto& it : m_slSinrReportCallback)
+      {
+        // get rnti 
+        // uint16_t thisDeviceRnti;
+        // Ptr<MmWaveVehicularNetDevice> vehicularDevice = DynamicCast<MmWaveVehicularNetDevice>(m_device);
+        // Ptr<MmWaveMillicarUeNetDevice> gVehicularDevice = DynamicCast<MmWaveMillicarUeNetDevice>(m_device);
+
+        // if(vehicularDevice){
+        //   thisDeviceRnti = vehicularDevice->GetMac()->GetRnti();
+        // }else{
+        //   thisDeviceRnti = gVehicularDevice->GetMacMillicar()->GetRnti();
+        // }
+
+        it(m_sinrPerceived, (*i).rnti, (*i).numSym, (*i).size, (*i).mcs, corrupt); // TODO also export corrupt and tbler)
+        // it(m_sinrPerceived, (*i).rnti, (*i).numSym, (*i).size, (*i).mcs, thisDeviceRnti); // TODO also export corrupt and tbler)
+      }
+      // TODO: we have to insert the harq process
+      // modified
+      // DlHarqInfo harqDlInfo;
+      // harqDlInfo.m_rnti = (*i).rnti;
+      // harqDlInfo.m_harqProcessId = 0;
+      // harqDlInfo.m_numRetx = itTb->second.m_expected.m_rv;
+      // end modification
+      if(!corrupt)
+      {
+        // modified
+        // harqDlInfo.m_harqStatus = DlHarqInfo::ACK;
+        // end modification
+        Ptr<PacketBurst> burst = (*i).packetBurst;
+        for (std::list<Ptr<Packet> >::const_iterator j = (*burst).Begin (); j != (*burst).End (); ++j)
         {
-          // get rnti 
-          // uint16_t thisDeviceRnti;
-          // Ptr<MmWaveVehicularNetDevice> vehicularDevice = DynamicCast<MmWaveVehicularNetDevice>(m_device);
-          // Ptr<MmWaveMillicarUeNetDevice> gVehicularDevice = DynamicCast<MmWaveMillicarUeNetDevice>(m_device);
+          if ((*j)->GetSize () == 0)
+          {
+            continue;
+          }
 
-          // if(vehicularDevice){
-          //   thisDeviceRnti = vehicularDevice->GetMac()->GetRnti();
-          // }else{
-          //   thisDeviceRnti = gVehicularDevice->GetMacMillicar()->GetRnti();
-          // }
-
-          it(m_sinrPerceived, (*i).rnti, (*i).numSym, (*i).size, (*i).mcs, corrupt); // TODO also export corrupt and tbler)
-          // it(m_sinrPerceived, (*i).rnti, (*i).numSym, (*i).size, (*i).mcs, thisDeviceRnti); // TODO also export corrupt and tbler)
+          // Do we need the LteRadioBearerTag also here to check the rnti? I don't think so.
+          NS_ASSERT_MSG (!m_phyRxDataEndOkCallback.IsNull (), "First set the rx callback");
+          m_phyRxDataEndOkCallback (*j);
         }
+      }
+      else
+      {
+        // modified
+        // harqDlInfo.m_harqStatus = DlHarqInfo::NACK;
+        // end modification
+        NS_LOG_INFO ("TB failed");
+      }
+      // modified
+      // NS_ASSERT(harqDlInfoMap.find((*i).rnti) == harqDlInfoMap.end());
+      // harqDlInfoMap.insert(std::make_pair((*i).rnti, harqDlInfo));
 
-       if(!corrupt)
-       {
-         Ptr<PacketBurst> burst = (*i).packetBurst;
-         for (std::list<Ptr<Packet> >::const_iterator j = (*burst).Begin (); j != (*burst).End (); ++j)
-         {
-           if ((*j)->GetSize () == 0)
-           {
-             continue;
-           }
+      // if (!m_phyDlHarqFeedbackCallback.IsNull())
+      // {
+      //   m_phyDlHarqFeedbackCallback(harqDlInfo);
+      // }
 
-           // Do we need the LteRadioBearerTag also here to check the rnti? I don't think so.
-           NS_ASSERT_MSG (!m_phyRxDataEndOkCallback.IsNull (), "First set the rx callback");
-           m_phyRxDataEndOkCallback (*j);
-         }
-       }
-       else
-       {
-         NS_LOG_INFO ("TB failed");
-       }
+      // // // Arrange the history
+      // if (!itTb->second.m_isCorrupted || itTb->second.m_expected.m_rv == 3)
+      // {
+      //   m_harqPhyModule->ResetDlHarqProcessStatus(
+      //         (*i).rnti,
+      //         0);
+      // }
+      // else
+      // {
+      //   m_harqPhyModule->UpdateDlHarqProcessStatus(
+      //         (*i).rnti,
+      //         0,
+      //         tbStats);
+      // }
+      // end modification
      }
   }
+
+  // modified
+  // send DL HARQ feedback to LtePhy
+  // std::map<uint16_t, DlHarqInfo>::iterator itHarq;
+  // for (itHarq = harqDlInfoMap.begin(); itHarq != harqDlInfoMap.end(); itHarq++)
+  // {
+  //     if (!m_phyDlHarqFeedbackCallback.IsNull())
+  //     {
+  //         m_phyDlHarqFeedbackCallback((*itHarq).second);
+  //     }
+  // }
+  // end modification
 
   // forward control messages of this frame to MmWavePhy
 
@@ -477,6 +546,19 @@ MmWaveSidelinkSpectrumPhy::EndRxData ()
   m_state = IDLE;
   m_rxTransportBlock.clear ();
   //m_rxControlMessageList.clear ();
+}
+
+void
+MmWaveSidelinkSpectrumPhy::SetPhyDlHarqFeedbackCallback(MmWavePhyDlHarqFeedbackCallback c)
+{
+    NS_LOG_FUNCTION(this);
+    m_phyDlHarqFeedbackCallback = c;
+}
+
+void
+MmWaveSidelinkSpectrumPhy::SetHarqPhyModule(Ptr<MmWaveHarqPhy> harq)
+{
+    m_harqPhyModule = harq;
 }
 
 // void

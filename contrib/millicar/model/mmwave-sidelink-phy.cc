@@ -62,6 +62,35 @@ MacSidelinkMemberPhySapProvider::GetSpectrum () const
   return m_phy->GetSpectrumPhy ();
 }
 
+// modified
+// bool
+// MacSidelinkMemberPhySapProvider::NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold)
+// {
+//   return m_phy->DoNeedRelayPath (destinationRnti, relaySnrThreshold);
+// }
+
+void
+MacSidelinkMemberPhySapProvider::DecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti){
+  m_phy->DoDecentralizedRemoveRelayPath (localRnti, destRnti);
+} 
+
+std::pair<const uint64_t, double>
+MacSidelinkMemberPhySapProvider::GetBestRelayNeighbor(){
+  return m_phy->DoGetBestRelayNeighbor();
+}
+
+double
+MacSidelinkMemberPhySapProvider::GetDirectLinkSignalStrength(uint16_t rntiDest){
+  return m_phy->DoGetDirectLinkSignalStrength(rntiDest);
+}
+
+void 
+MacSidelinkMemberPhySapProvider::UpdateDecentralizedFullRelayPath(uint16_t destRnti, uint16_t interRnti){
+  m_phy->DoUpdateDecentralizedFullRelayPath(destRnti, interRnti);
+}
+
+// end modification
+
 
 
 
@@ -157,6 +186,17 @@ MmWaveSidelinkPhy::GetTypeId (void)
                     "for each peer-ue pair",
                     MakeTraceSourceAccessor(&MmWaveSidelinkPhy::m_notifyMillicarPairsSinrTrace),
                     "ns3::millicar::MmWaveSidelinkPhy::NotifyMillicarPairsSinrTracedCallback")
+    .AddAttribute("SnrReport",
+                  "Boolean to indicate whether the report shall be SNR or SINR",
+                  BooleanValue(true),
+                  MakeBooleanAccessor(&MmWaveSidelinkPhy::m_snrReport),
+                  MakeBooleanChecker())
+    .AddAttribute("DecentralizedRelay",
+                  "Boolean to indicate whether we deploy a decentralized relay",
+                  BooleanValue(false),
+                  MakeBooleanAccessor(&MmWaveSidelinkPhy::m_decentralizedRelay),
+                  MakeBooleanChecker())
+    
     // end modification                
     ;
   return tid;
@@ -564,9 +604,6 @@ MmWaveSidelinkPhy::MakeFilter(std::vector<double> noisySinr,
 
 
 
-
-
-
 void
 MmWaveSidelinkPhy::SetLastCommuncatingDeviceRnti(uint16_t rnti){
   m_lastCommuncatingDeviceRnti = rnti;
@@ -627,8 +664,6 @@ MmWaveSidelinkPhy::UpdateUePeerSinrEstimate(){
       // get tx power
       double ueTxPower = 0;
       uint16_t peerLastComunicatingDeviceRnti = UINT16_MAX;
-      
-      
       
       if (uePeerNetDevice!=nullptr)
       {
@@ -741,180 +776,178 @@ MmWaveSidelinkPhy::UpdateUePeerSinrEstimate(){
       SpectrumValue interference = *totalReceivedPsd - *(ue->second);
       // NS_LOG_DEBUG("interference " << interference);
       SpectrumValue sinr = *(ue->second) / (*noisePsd); // + interference);
+      SpectrumValue sinr_int = *(ue->second) / ((*noisePsd) + (interference));
       // we consider the SNR only!
-      // NS_LOG_DEBUG("sinr " << sinr);
-      double sinrAvg = Sum(sinr) / (sinr.GetSpectrumModel()->GetNumBands());
+      
+      double sinrAvg_no_int = Sum(sinr) / (sinr.GetSpectrumModel()->GetNumBands());
+      double sinrAvg_int = Sum(sinr_int) / (sinr_int.GetSpectrumModel()->GetNumBands());
+      // NS_LOG_UNCOND("Snr " << sinrAvg_no_int << " sinr " << sinrAvg_int);
+      double sinrAvg = 0;
+      if (m_snrReport){
+        sinrAvg = sinrAvg_no_int;
+      }else{
+        sinrAvg = sinrAvg_int;
+      }
+      
       NS_LOG_LOGIC("Time " << Simulator::Now().GetSeconds() << " m_rnti " << m_rnti  << " UE " 
                             << ue->first << "Average SINR " << 10 * std::log10(sinrAvg));
 
-      if (m_noiseAndFilter)
-        {
-            millicarPairDevices_t pairDevices =
-                std::make_pair(ue->first, m_rnti);            // this is the current pair (UE-peer)
-            auto iteratorSinr = m_sinrVector.find(pairDevices); // pair [pairDevices,Sinrvalue]
-            if (iteratorSinr != m_sinrVector.end()){ // this map has already been initialized, so I
-                                                    // can add a new element for the SINR collection
-            
-                if (Now().GetMicroSeconds() <= m_transient)
-                {
-                    m_sinrVector.at(pairDevices)
-                        .push_back(sinrAvg); // before transient, so just collect SINR values
-                }
-                else
-                {
-                    m_sinrVector.at(pairDevices).erase(m_sinrVector.at(pairDevices).begin());
-                    m_sinrVector.at(pairDevices)
-                        .push_back(sinrAvg); // before transient, so just collect SINR values
-                }
-
-                NS_LOG_DEBUG("At time " << Now().GetMicroSeconds() << " push back the REAL SINR "
-                                        << 10 * std::log10(sinrAvg) << " for pair with m_rnti "
-                                        << m_rnti<< " and UE " << ue->first);
-            }
-            else{ // vector is not initialized, so it means that we are still in the initial
-                 // transient phase, for that pair
-            
-                m_sinrVector.insert(std::make_pair(pairDevices, std::vector<double>()));
-                m_sinrVector.at(pairDevices).push_back(sinrAvg); // push back a new SINR value
-                NS_LOG_DEBUG("At time " << Now().GetMicroSeconds()
-                                        << " first initializazion and push back the SINR "
-                                        << 10 * std::log10(sinrAvg) << " for pair with m_rnti "
-                                        << m_rnti << " and UE " << ue->first);
-            }
-
-            auto iteratorFinalTrace =
-                m_finalSinrVector.find(pairDevices); // pair [pairDevices,Sinrvalue]
-            if (iteratorFinalTrace == m_finalSinrVector.end())
-            {
-                m_samplesFilter.insert(
-                    std::make_pair(pairDevices, std::pair<uint64_t, uint64_t>()));
-                m_finalSinrVector.insert(std::make_pair(pairDevices, std::vector<double>()));
-            }
-
-            auto iteratorSinrToFilter =
-                m_sinrVectorToFilter.find(pairDevices); // pair [pairDevices,Sinrvalue]
-            if (iteratorSinrToFilter == m_sinrVectorToFilter.end())
-            {
-                m_sinrVectorToFilter.insert(std::make_pair(pairDevices, std::vector<double>()));
-                m_sinrVectorNoisy.insert(std::make_pair(pairDevices, std::vector<double>()));
-            }
-
-            /* generate Gaussian noise for the last SINR value (that is the current one) */
-            double sinrNoisy = AddGaussianNoise(m_sinrVector.at(pairDevices).back());
-
-            /* UPDATE TRACE TO BE FILTERED */
-            if (Now().GetMicroSeconds() <= m_transient)
-            {
-                m_sinrVectorNoisy.at(pairDevices).push_back(sinrNoisy);
-
-                // if (sinrNoisy < 0)
-                // {
-                //        NS_LOG_DEBUG("Old SINR value was " << 10*std::log10(sinrNoisy) << " while
-                //        now is " << 10*std::log10(0.1)); sinrNoisy = 0.1;
-                // }
-                m_sinrVectorToFilter.at(pairDevices).push_back(sinrNoisy);
-            }
-            else
-            {
-                m_sinrVectorNoisy.at(pairDevices).erase(m_sinrVectorNoisy.at(pairDevices).begin());
-                m_sinrVectorNoisy.at(pairDevices).push_back(sinrNoisy);
-
-                // if (sinrNoisy < 0)
-                // {
-                //        NS_LOG_DEBUG("Old SINR value was " << 10*std::log10(sinrNoisy) << " while
-                //        now is " << 10*std::log10(0.1)); sinrNoisy = 0.1;
-                // }
-
-                double toPlot = *m_sinrVectorToFilter.at(pairDevices).begin();
-                double toPlotbis = sinrNoisy;
-                NS_LOG_DEBUG("(Remove SINR)  " << toPlot);
-                NS_LOG_DEBUG("(Add SINR)  " << toPlotbis);
-
-                m_sinrVectorToFilter.at(pairDevices)
-                    .erase(m_sinrVectorToFilter.at(pairDevices).begin());
-                m_sinrVectorToFilter.at(pairDevices).push_back(sinrNoisy);
-            }
-
-            if (Now().GetMicroSeconds() > m_transient){ // apply filter only when I have a
-                                                       // sufficiently large set of SINR samples
-            
-                std::vector<double> vectorNoisy = m_sinrVectorNoisy.at(pairDevices);
-                std::pair<uint64_t, uint64_t> pairFiltering = ApplyFilter(
-                    vectorNoisy); // find where to apply the filter, according to the variance
-                m_samplesFilter.at(pairDevices) = pairFiltering; // where to apply the linear filter
-                NS_LOG_DEBUG("Noisy vector start at sample " << std::get<0>(pairFiltering));
-                NS_LOG_DEBUG("Noisy vector end at sample " << std::get<1>(pairFiltering));
-
-                /* just apply filter where the SINR is too low and we are in a blockage situation */
-                if (std::get<0>(m_samplesFilter.at(pairDevices)) ==
-                    std::get<1>(m_samplesFilter.at(pairDevices))) // if start = end
-                {
-                    m_finalSinrVector.at(pairDevices) =
-                        m_sinrVectorToFilter.at(pairDevices); // no need to apply the filter
-                    NS_LOG_DEBUG("At time "
-                                 << Now().GetMicroSeconds()
-                                 << " there is no need to apply the Kalman filter for mmWave ue m_rnti "
-                                 << m_rnti << " and UE " << ue->first);
-                }
-                else
-                {
-                    std::vector<double> vectorToFilter = m_sinrVectorToFilter.at(pairDevices);
-                    std::vector<double> sinrVector = m_sinrVector.at(pairDevices);
-                    std::pair<uint64_t, uint64_t> filterPair = m_samplesFilter.at(pairDevices);
-                    m_finalSinrVector.at(pairDevices) =
-                        MakeFilter(vectorNoisy, sinrVector, filterPair);
-                    NS_LOG_DEBUG("finaltrace " << m_finalSinrVector.at(pairDevices).back());
-                }
-
-                /* the last sample in the filtered sequence is referred to the current time instant,
-                 * referred to the uplink reference signal that is used to build the RT in the
-                 * LteEnbRrc class */
-                double sampleToForward = m_finalSinrVector.at(pairDevices).back();
-                if (sampleToForward < 0) // this would be converted in NaN, in the log scale
-                {
-                    sampleToForward = 1e-20;
-                }
-                NS_LOG_DEBUG(" mmWave ue m_rnti " << m_rnti << " reports the SINR "
-                                            << 10 * std::log10(sampleToForward) << " for UE "
-                                            << ue->first);
-                m_sinrMillicarPairDevicesMap[ue->first] =
-                    sampleToForward; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< in order to
-                                     // FORWARD to LteEnbRrc the value of SINR for the RT
-
-                // m_sinrVectorToFilter.at(pairDevices).erase(m_sinrVectorToFilter.at(pairDevices).begin());
-                // m_sinrVectorToFilter.at(pairDevices).push_back(m_finalSinrVector.at(pairDevices).back());
-                m_sinrVectorToFilter.at(pairDevices).pop_back();
-                m_sinrVectorToFilter.at(pairDevices)
-                    .push_back(m_finalSinrVector.at(pairDevices).back());
-            }
-            else{ // before the transient is over, just forwart the (last) noisy sample, without
-                 // having filtered
-            
-                double sampleToForward = m_sinrVectorToFilter.at(pairDevices).back();
-                if (sampleToForward < 0) // this would be converted in NaN, in the log scale
-                {
-                    sampleToForward = 1e-20;
-                }
-                NS_LOG_DEBUG(" mmWave ue m_rnti " << m_rnti << " FIRST reports the SINR "
-                                            << 10 * std::log10(sampleToForward) << " for UE "
-                                            << ue->first);
-                m_sinrMillicarPairDevicesMap[ue->first] =
-                    sampleToForward; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< in order to
-                                     // FORWARD to LteEnbRrc the value of SINR for the RT
-            }
-
-            /* after the SINR sample is forwarded, I need to REFRESH all the maps, so that
-             * a new SINR sequence can be created, to generate a new SINR sample
-             * for the next RT
-             */
-            m_finalSinrVector.erase(pairDevices);
-            m_samplesFilter.erase(pairDevices);
-            NS_LOG_DEBUG("ERASE MAPS FOR RT");
-        }
-        else // noise and filtering processes are not applied!
-        {
-            m_sinrMillicarPairDevicesMap[ue->first] = sinrAvg;
-        }
+      // original
+      // if (m_noiseAndFilter)
+      //   {
+      //       millicarPairDevices_t pairDevices =
+      //           std::make_pair(ue->first, m_rnti);            // this is the current pair (UE-peer)
+      //       auto iteratorSinr = m_sinrVector.find(pairDevices); // pair [pairDevices,Sinrvalue]
+      //       if (iteratorSinr != m_sinrVector.end()){ // this map has already been initialized, so I
+      //                                               // can add a new element for the SINR collection
+      //           if (Now().GetMicroSeconds() <= m_transient)
+      //           {
+      //               m_sinrVector.at(pairDevices)
+      //                   .push_back(sinrAvg); // before transient, so just collect SINR values
+      //           }
+      //           else
+      //           {
+      //               m_sinrVector.at(pairDevices).erase(m_sinrVector.at(pairDevices).begin());
+      //               m_sinrVector.at(pairDevices)
+      //                   .push_back(sinrAvg); // before transient, so just collect SINR values
+      //           }
+      //           NS_LOG_DEBUG("At time " << Now().GetMicroSeconds() << " push back the REAL SINR "
+      //                                   << 10 * std::log10(sinrAvg) << " for pair with m_rnti "
+      //                                   << m_rnti<< " and UE " << ue->first);
+      //       }
+      //       else{ // vector is not initialized, so it means that we are still in the initial
+      //            // transient phase, for that pair
+      //           m_sinrVector.insert(std::make_pair(pairDevices, std::vector<double>()));
+      //           m_sinrVector.at(pairDevices).push_back(sinrAvg); // push back a new SINR value
+      //           NS_LOG_DEBUG("At time " << Now().GetMicroSeconds()
+      //                                   << " first initializazion and push back the SINR "
+      //                                   << 10 * std::log10(sinrAvg) << " for pair with m_rnti "
+      //                                   << m_rnti << " and UE " << ue->first);
+      //       }
+      //       auto iteratorFinalTrace =
+      //           m_finalSinrVector.find(pairDevices); // pair [pairDevices,Sinrvalue]
+      //       if (iteratorFinalTrace == m_finalSinrVector.end())
+      //       {
+      //           m_samplesFilter.insert(
+      //               std::make_pair(pairDevices, std::pair<uint64_t, uint64_t>()));
+      //           m_finalSinrVector.insert(std::make_pair(pairDevices, std::vector<double>()));
+      //       }
+      //       auto iteratorSinrToFilter =
+      //           m_sinrVectorToFilter.find(pairDevices); // pair [pairDevices,Sinrvalue]
+      //       if (iteratorSinrToFilter == m_sinrVectorToFilter.end())
+      //       {
+      //           m_sinrVectorToFilter.insert(std::make_pair(pairDevices, std::vector<double>()));
+      //           m_sinrVectorNoisy.insert(std::make_pair(pairDevices, std::vector<double>()));
+      //       }
+      //       /* generate Gaussian noise for the last SINR value (that is the current one) */
+      //       double sinrNoisy = AddGaussianNoise(m_sinrVector.at(pairDevices).back());
+      //       /* UPDATE TRACE TO BE FILTERED */
+      //       if (Now().GetMicroSeconds() <= m_transient)
+      //       {
+      //           m_sinrVectorNoisy.at(pairDevices).push_back(sinrNoisy);
+      //           // if (sinrNoisy < 0)
+      //           // {
+      //           //        NS_LOG_DEBUG("Old SINR value was " << 10*std::log10(sinrNoisy) << " while
+      //           //        now is " << 10*std::log10(0.1)); sinrNoisy = 0.1;
+      //           // }
+      //           m_sinrVectorToFilter.at(pairDevices).push_back(sinrNoisy);
+      //       }
+      //       else
+      //       {
+      //           m_sinrVectorNoisy.at(pairDevices).erase(m_sinrVectorNoisy.at(pairDevices).begin());
+      //           m_sinrVectorNoisy.at(pairDevices).push_back(sinrNoisy);
+      //           // if (sinrNoisy < 0)
+      //           // {
+      //           //        NS_LOG_DEBUG("Old SINR value was " << 10*std::log10(sinrNoisy) << " while
+      //           //        now is " << 10*std::log10(0.1)); sinrNoisy = 0.1;
+      //           // }
+      //           double toPlot = *m_sinrVectorToFilter.at(pairDevices).begin();
+      //           double toPlotbis = sinrNoisy;
+      //           NS_LOG_DEBUG("(Remove SINR)  " << toPlot);
+      //           NS_LOG_DEBUG("(Add SINR)  " << toPlotbis);
+      //           m_sinrVectorToFilter.at(pairDevices)
+      //               .erase(m_sinrVectorToFilter.at(pairDevices).begin());
+      //           m_sinrVectorToFilter.at(pairDevices).push_back(sinrNoisy);
+      //       }
+      //       if (Now().GetMicroSeconds() > m_transient){ // apply filter only when I have a
+      //                                                  // sufficiently large set of SINR samples
+      //           std::vector<double> vectorNoisy = m_sinrVectorNoisy.at(pairDevices);
+      //           std::pair<uint64_t, uint64_t> pairFiltering = ApplyFilter(
+      //               vectorNoisy); // find where to apply the filter, according to the variance
+      //           m_samplesFilter.at(pairDevices) = pairFiltering; // where to apply the linear filter
+      //           NS_LOG_DEBUG("Noisy vector start at sample " << std::get<0>(pairFiltering));
+      //           NS_LOG_DEBUG("Noisy vector end at sample " << std::get<1>(pairFiltering));
+      //           /* just apply filter where the SINR is too low and we are in a blockage situation */
+      //           if (std::get<0>(m_samplesFilter.at(pairDevices)) ==
+      //               std::get<1>(m_samplesFilter.at(pairDevices))) // if start = end
+      //           {
+      //               m_finalSinrVector.at(pairDevices) =
+      //                   m_sinrVectorToFilter.at(pairDevices); // no need to apply the filter
+      //               NS_LOG_DEBUG("At time "
+      //                            << Now().GetMicroSeconds()
+      //                            << " there is no need to apply the Kalman filter for mmWave ue m_rnti "
+      //                            << m_rnti << " and UE " << ue->first);
+      //           }
+      //           else
+      //           {
+      //               std::vector<double> vectorToFilter = m_sinrVectorToFilter.at(pairDevices);
+      //               std::vector<double> sinrVector = m_sinrVector.at(pairDevices);
+      //               std::pair<uint64_t, uint64_t> filterPair = m_samplesFilter.at(pairDevices);
+      //               m_finalSinrVector.at(pairDevices) =
+      //                   MakeFilter(vectorNoisy, sinrVector, filterPair);
+      //               NS_LOG_DEBUG("finaltrace " << m_finalSinrVector.at(pairDevices).back());
+      //           }
+      //           /* the last sample in the filtered sequence is referred to the current time instant,
+      //            * referred to the uplink reference signal that is used to build the RT in the
+      //            * LteEnbRrc class */
+      //           double sampleToForward = m_finalSinrVector.at(pairDevices).back();
+      //           if (sampleToForward < 0) // this would be converted in NaN, in the log scale
+      //           {
+      //               sampleToForward = 1e-20;
+      //           }
+      //           NS_LOG_DEBUG(" mmWave ue m_rnti " << m_rnti << " reports the SINR "
+      //                                       << 10 * std::log10(sampleToForward) << " for UE "
+      //                                       << ue->first);
+      //           m_sinrMillicarPairDevicesMap[ue->first] =
+      //               sampleToForward; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< in order to
+      //                                // FORWARD to LteEnbRrc the value of SINR for the RT
+      //           // m_sinrVectorToFilter.at(pairDevices).erase(m_sinrVectorToFilter.at(pairDevices).begin());
+      //           // m_sinrVectorToFilter.at(pairDevices).push_back(m_finalSinrVector.at(pairDevices).back());
+      //           m_sinrVectorToFilter.at(pairDevices).pop_back();
+      //           m_sinrVectorToFilter.at(pairDevices)
+      //               .push_back(m_finalSinrVector.at(pairDevices).back());
+      //       }
+      //       else{ // before the transient is over, just forwart the (last) noisy sample, without
+      //            // having filtered
+      //           double sampleToForward = m_sinrVectorToFilter.at(pairDevices).back();
+      //           if (sampleToForward < 0) // this would be converted in NaN, in the log scale
+      //           {
+      //               sampleToForward = 1e-20;
+      //           }
+      //           NS_LOG_DEBUG(" mmWave ue m_rnti " << m_rnti << " FIRST reports the SINR "
+      //                                       << 10 * std::log10(sampleToForward) << " for UE "
+      //                                       << ue->first);
+      //           m_sinrMillicarPairDevicesMap[ue->first] =
+      //               sampleToForward; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< in order to
+      //                                // FORWARD to LteEnbRrc the value of SINR for the RT
+      //       }
+      //       /* after the SINR sample is forwarded, I need to REFRESH all the maps, so that
+      //        * a new SINR sequence can be created, to generate a new SINR sample
+      //        * for the next RT
+      //        */
+      //       m_finalSinrVector.erase(pairDevices);
+      //       m_samplesFilter.erase(pairDevices);
+      //       NS_LOG_DEBUG("ERASE MAPS FOR RT");
+      //   }
+      // else // noise and filtering processes are not applied!
+      // {
+      //     m_sinrMillicarPairDevicesMap[ue->first] = sinrAvg;
+      // }
+      // modified
+      
+      m_sinrMillicarPairDevicesMap[ue->first].snr = sinrAvg_no_int;
+      m_sinrMillicarPairDevicesMap[ue->first].sinr = sinrAvg_int;
+      // end modificaiton
 
   }
 
@@ -937,16 +970,15 @@ MmWaveSidelinkPhy::UpdateUePeerSinrEstimate(){
 void 
 MmWaveSidelinkPhy::ReportSinrMillicarPairs(){
   NS_LOG_FUNCTION (this);
-  for (std::map<uint64_t, double>::iterator peerMapIter = m_sinrMillicarPairDevicesMap.begin();
+  for (std::map<uint64_t, SinrReportStruct>::iterator peerMapIter = m_sinrMillicarPairDevicesMap.begin();
          peerMapIter != m_sinrMillicarPairDevicesMap.end();
          ++peerMapIter)
     {
       // rnti is the id of the device generating the report; in the map first index is the peer id
       // second index is the sinr
-      m_notifyMillicarPairsSinrTrace(m_rnti, peerMapIter->first, peerMapIter->second);
+      m_notifyMillicarPairsSinrTrace(m_rnti, peerMapIter->first, peerMapIter->second.snr, peerMapIter->second.sinr);
     }
 }
-
 
 void
 MmWaveSidelinkPhy::SetMillicarSinrMapReportCallback(Callback<void, uint16_t, std::map<uint64_t, double>> sinrMapDeviceForwardCallback){
@@ -975,6 +1007,85 @@ MmWaveSidelinkPhy::PrintRelay(){
   }
 }
 
+
+std::pair<const uint64_t, double>
+MmWaveSidelinkPhy::DoGetBestRelayNeighbor(){
+  NS_LOG_FUNCTION (this);
+  uint64_t ueId = 0;
+  double snrValue = 0;
+  for (std::map<uint64_t, SinrReportStruct>::iterator peerMapIter = m_sinrMillicarPairDevicesMap.begin();
+        peerMapIter != m_sinrMillicarPairDevicesMap.end(); ++peerMapIter){
+    if (peerMapIter->second.snr > snrValue){
+      ueId = peerMapIter->first;
+      snrValue = peerMapIter->second.snr;
+    }
+  }
+
+  if (snrValue>0){
+    return std::pair<uint64_t, double>(ueId, snrValue);
+  }else{
+    return std::pair<uint64_t, double>(UINT16_MAX, 0);
+  }
+}
+
+double
+MmWaveSidelinkPhy::DoGetDirectLinkSignalStrength(uint16_t rntiDest){
+  auto sinrDestIt = m_sinrMillicarPairDevicesMap.find(rntiDest);
+  if (sinrDestIt != m_sinrMillicarPairDevicesMap.end()){
+    return sinrDestIt->second.snr;
+  }
+  return 0;
+}
+
+void 
+MmWaveSidelinkPhy::UpdateDecentralizedRelayPath(uint16_t rnti){
+  NS_LOG_FUNCTION (this);
+  std::pair<const uint64_t, double> _pair = DoGetBestRelayNeighbor();
+  m_relayPaths[GetRnti()][rnti] = _pair.second;
+}
+
+void 
+MmWaveSidelinkPhy::DoUpdateDecentralizedFullRelayPath(uint16_t destRnti, uint16_t interRnti){
+  NS_LOG_FUNCTION (this);
+  m_relayPaths[GetRnti()][destRnti] = interRnti;
+}
+
+// check whether a relay path is needed between local rnti and the destination rnti
+// bool
+// MmWaveSidelinkPhy::DoNeedRelayPath(uint16_t rnti, double relaySnrThreshold){
+//   NS_LOG_FUNCTION (this);
+
+//   std::map<uint64_t, SinrReportStruct>::iterator sinrIt = m_sinrMillicarPairDevicesMap.find(rnti);
+//   if ((sinrIt!=m_sinrMillicarPairDevicesMap.end())){
+//     // check the level of snr/sinr in the map
+//     if (sinrIt->second.snr<=m_decentralizedRelaySnr){
+//       return true;
+//     }
+//   }
+//   return false;
+// }
+
+void
+MmWaveSidelinkPhy::DoDecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti){
+  NS_LOG_FUNCTION(this << localRnti << " " << destRnti);
+
+  auto localRntiIt = m_relayPaths.find(localRnti);
+  if (localRntiIt!= m_relayPaths.end()){
+    auto destRntiIt = localRntiIt->second.find(destRnti);
+    if (destRntiIt!= localRntiIt->second.end()){
+      localRntiIt->second.erase(destRntiIt);
+    }
+  }
+
+  auto destRntiIt = m_relayPaths.find(destRnti);
+  if (destRntiIt!= m_relayPaths.end()){
+    auto localRntiIt = destRntiIt->second.find(localRnti);
+    if (localRntiIt!= destRntiIt->second.end()){
+      destRntiIt->second.erase(localRntiIt);
+    }
+  }
+}
+
 // end modification
 
 void
@@ -995,6 +1106,10 @@ MmWaveSidelinkPhy::StartSlot (mmwave::SfnSf timingInfo)
     std::tie (pktBurst, info) = m_phyBuffer.front ();
 
     // modified
+    // check if we are in decetralized relay scenario
+    // if (m_decentralizedRelay & NeedRelayPath(info.m_rnti)){
+    //   UpdateDecentralizedRelayPath(info.m_rnti);
+    // }
     // check if we have rnti in the relay path; if so, change rnti to intermediate
     uint16_t intermediateDest = UINT16_MAX;
     // check if rntiDest is in relay path; if it is, then we have to change the destination

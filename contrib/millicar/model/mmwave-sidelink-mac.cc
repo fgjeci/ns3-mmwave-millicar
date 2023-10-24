@@ -38,6 +38,7 @@ while (false);
 #include <ns3/net-device.h>
 #include <ns3/node.h>
 #include "mmwave-packet-relay-tag.h"
+#include "mmwave-vehicular-5g-net-device.h"
 
 namespace ns3 {
 
@@ -125,6 +126,25 @@ MmWaveSidelinkMac::GetTypeId (void)
                     "The Rlc buffer status coming from RLC.",
                     MakeTraceSourceAccessor (&MmWaveSidelinkMac::m_rlcBufferStatusTrace),
                     "ns3::millicar::MmWaveSidelinkMac::RlcBufferStatusTracedCallback")   
+    .AddTraceSource ("DecentralizedRelaySnr",
+                    "The relay snr for the decentralized case.",
+                    MakeTraceSourceAccessor (&MmWaveSidelinkMac::m_decentralizedRelaySnrTrace),
+                    "ns3::millicar::MmWaveSidelinkMac::DecentralizedRelaySnrTracedCallback") 
+    .AddTraceSource ("RelayPacketLatency",
+                    "The trace to measure the latency of the packet.",
+                    MakeTraceSourceAccessor (&MmWaveSidelinkMac::m_relayLatency),
+                    "ns3::millicar::MmWaveSidelinkMac::RelayPacketLatencyTracedCallback")  
+    .AddAttribute("DecentralizedRelaySnr",
+                  "The value of SNR for which a relay is triggered in the decentralized architecture",
+                  DoubleValue (5.0),
+                  MakeDoubleAccessor(&MmWaveSidelinkMac::m_decentralizedRelaySnr),
+                  MakeDoubleChecker<double> ())
+    .AddAttribute("HasDecentralizedRelay",
+                  "A boolean indicating whether a decentralized relay approach is implemented",
+                  BooleanValue (false),
+                  MakeBooleanAccessor(&MmWaveSidelinkMac::m_hasDecentralizedRelay),
+                  MakeBooleanChecker ())
+    
 ;
   return tid;
 }
@@ -168,7 +188,7 @@ MmWaveSidelinkMac::DoDispose ()
 void
 MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
 {
-  NS_LOG_FUNCTION (this);
+  // NS_LOG_FUNCTION (this);
   m_frame = timingInfo.m_frameNum;
   m_subframe = timingInfo.m_sfNum;
   m_slotNum = timingInfo.m_slotNum;
@@ -177,7 +197,14 @@ MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
   NS_ASSERT_MSG (!m_sfAllocInfo.empty (), "First set the scheduling pattern");
   if(m_sfAllocInfo [timingInfo.m_slotNum] == m_rnti) // check if this slot is associated to the user who required it
   {
+    // check if there should be relays in decentalized mode
+    if (m_hasDecentralizedRelay){
+      UpdateDecentralizedAllRelayPaths(timingInfo);
+    }
+    //
     mmwave::SlotAllocInfo allocationInfo = ScheduleResources (timingInfo);
+
+    // NS_LOG_DEBUG("Schedule finished");
 
     // associate slot alloc info and pdu
     for (auto it = allocationInfo.m_ttiAllocInfo.begin(); it != allocationInfo.m_ttiAllocInfo.end (); it++)
@@ -192,6 +219,15 @@ MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
       }
 
       // modified
+      // NS_LOG_DEBUG("Peekeing the packet tag");
+      MmWaveMacPacketRelayTag packetRelayTag;
+      txBuffer->second.front ().pdu->PeekPacketTag(packetRelayTag);
+      // uint16_t destinationRnti = packetRelayTag.GetDestinationRnti();
+      // uint16_t sourceRnti = peekPacketRelayTag.GetSourceRnti();
+
+      // packetRelayTag.SetDestinationRnti(it->m_rnti);
+      // packetRelayTag.SetSourceRnti(GetRnti());
+
       uint16_t intermediateDest = UINT16_MAX;
       // check if rntiDest is in relay path; if it is, then we have to change the destination
       // for the path
@@ -205,13 +241,25 @@ MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
         }
       }
       
-      if (intermediateDest != UINT16_MAX){
+      // only from the source can be triggered a relay
+      // the seconds part is to avoid to do a relay in intermediate nodes
+      // this avoids a chain relay or loop relays
+      if ((intermediateDest != UINT16_MAX) && (packetRelayTag.GetSourceRnti() == GetRnti())){
         // as the original
         // NS_LOG_LOGIC("Changing relay path from rnti " << it->m_rnti << " to " << intermediateDest);
         it->m_rnti = intermediateDest;
-        
       }
+
+      // add intermediate rnti
+      // packetRelayTag.SetIntermediateRnti(intermediateDest);
+      // add the packet relay tag to distinguish from normal packet
+      // txBuffer->second.front ().pdu->AddPacketTag(packetRelayTag);
+
       // end modification
+
+      m_relayLatency(txBuffer->second.front ().pdu, GetRnti(), 
+                    packetRelayTag.GetSourceRnti(), 
+                    packetRelayTag.GetDestinationRnti(), 3);
 
       // otherwise, forward the packet to the PHY
       Ptr<PacketBurst> pb = CreateObject<PacketBurst> ();
@@ -222,7 +270,7 @@ MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
   }
   else if (m_sfAllocInfo[timingInfo.m_slotNum] != 0) // if the slot is assigned to another device, prepare for reception
   {
-    NS_LOG_INFO ("Prepare for reception from rnti " << m_sfAllocInfo[timingInfo.m_slotNum]);
+    // NS_LOG_INFO ("Prepare for reception from rnti " << m_sfAllocInfo[timingInfo.m_slotNum]);
     m_phySapProvider->PrepareForReception (m_sfAllocInfo[timingInfo.m_slotNum]);
   }
   else // the slot is not assigned to any user
@@ -262,6 +310,68 @@ MmWaveSidelinkMac::AddRelayPath(uint16_t localRnti, uint16_t destRnti, uint16_t 
   m_relayPaths[localRnti][destRnti] = intermediateRnti;
   m_relayPaths[destRnti][localRnti] = intermediateRnti;
 }
+
+void 
+MmWaveSidelinkMac::UpdateDecentralizedRelayPath(mmwave::SfnSf timingInfo, uint16_t rntiDest, double directLinkSnr){
+  // NS_LOG_FUNCTION (this);
+  // std::pair<const uint64_t, double> _pair = GetBestRelayNeighbor();
+  std::pair<const uint64_t, double> _pair = m_phySapProvider->GetBestRelayNeighbor();
+  m_relayPaths[GetRnti()][rntiDest] = (uint16_t)_pair.first;
+  // here we update the phy layer as well
+  m_phySapProvider->UpdateDecentralizedFullRelayPath(rntiDest, (uint16_t)_pair.first);
+
+  // updating the relay path in the device
+  Ptr<mmwave::MmWaveMillicarUeNetDevice> device = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(m_netDevice);
+  if (device!=nullptr){
+    device->DecentralizedAddRelayPath(GetRnti(), rntiDest, (uint16_t)_pair.first);
+  }
+  // create a trace to track the activation of relay
+  // local rnti, dest rnti, intermediate rnti, direct snr, best snr
+  // double directLinkSnr =  m_phySapProvider->GetDirectLinkSignalStrength(rntiDest);
+  m_decentralizedRelaySnrTrace(timingInfo, GetRnti(), rntiDest, (uint16_t)_pair.first, directLinkSnr, _pair.second);
+}
+
+void 
+MmWaveSidelinkMac::UpdateDecentralizedAllRelayPaths(mmwave::SfnSf timingInfo){
+  // NS_LOG_FUNCTION (this);
+  // we update the relay paths before the scheduling for all the rnti 
+  // in the bsr
+  // TODO: Update relay path in the device
+  Ptr<mmwave::MmWaveMillicarUeNetDevice> device = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(m_netDevice);
+  if (device==nullptr){
+    // we do not add a relay
+    return;
+  }
+  for (auto bsrIt = m_bufferStatusReportMap.begin (); bsrIt!=m_bufferStatusReportMap.end(); ++bsrIt){
+    uint16_t rntiDest = bsrIt->second.rnti;
+    // local rnti, dest rnti, intermediate rnti = 0, direct snr = 0, best snr
+    double directLinkSnr =  m_phySapProvider->GetDirectLinkSignalStrength(rntiDest);
+    // check if a relay is needed for this destination rnti
+    // NS_LOG_DEBUG("Direct link snr " << directLinkSnr);
+    if (directLinkSnr<=m_decentralizedRelaySnr){
+      UpdateDecentralizedRelayPath(timingInfo, rntiDest, directLinkSnr);
+    }else{
+      // mean we do not need a relay, thus we go to the main path
+      // find if there exist an entry in the relay path
+      auto localRntiRelayPathIt = m_relayPaths.find (GetRnti());
+      if (localRntiRelayPathIt != m_relayPaths.end()){
+        // find dest rnti 
+        auto destRntiRelayPathIt = localRntiRelayPathIt->second.find (rntiDest);
+        if (destRntiRelayPathIt != localRntiRelayPathIt->second.end()){
+          // delete the entry for the reference destination
+          localRntiRelayPathIt->second.erase(destRntiRelayPathIt);
+        } 
+      }
+      // remove the same relay path from the physical layer
+      m_phySapProvider->DecentralizedRemoveRelayPath(GetRnti(), rntiDest);
+      // Remove relay path in the device
+      device->DecentralizedRemoveRelayPath(GetRnti(), rntiDest);
+      // add the entry in the trace: 
+      m_decentralizedRelaySnrTrace(timingInfo, GetRnti(), rntiDest, UINT16_MAX, directLinkSnr, 0);
+    }
+  }
+}
+
 // end modification
 
 mmwave::SlotAllocInfo
@@ -271,7 +381,7 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
   allocationInfo.m_sfnSf = timingInfo;
   allocationInfo.m_numSymAlloc = 0;
 
-  NS_LOG_DEBUG("m_bufferStatusReportMap.size () =\t" << m_bufferStatusReportMap.size ());
+  // NS_LOG_DEBUG("m_bufferStatusReportMap.size () =\t" << m_bufferStatusReportMap.size ());
   // if there are no active channels return an empty vector
   if (m_bufferStatusReportMap.size () == 0)
   {
@@ -281,14 +391,14 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
   // compute the total number of available symbols
   uint32_t availableSymbols = m_phyMacConfig->GetSymbPerSlot ();
 
-  NS_LOG_DEBUG("availableSymbols =\t" << availableSymbols);
+  // NS_LOG_DEBUG("availableSymbols =\t" << availableSymbols);
 
   // compute the number of available symbols per logical channel
   // NOTE the number of available symbols per LC is rounded down due to the cast
   // to int
   uint32_t availableSymbolsPerLc = availableSymbols / m_bufferStatusReportMap.size ();
 
-  NS_LOG_DEBUG("availableSymbolsPerLc =\t" << availableSymbolsPerLc);
+  // NS_LOG_DEBUG("availableSymbolsPerLc =\t" << availableSymbolsPerLc);
 
   // TODO start from the last served lc + 1
   auto bsrIt = m_bufferStatusReportMap.begin ();
@@ -320,11 +430,15 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
     // end original
     // modified
     // here we have to use intermediate node if it is in relay paths
+    // we have to check as well we are not in the intermediate node
+    // if we are, we should refer to the mcs of the dest rnti
+    // the second condition indicates we have relay traffic, thus we 
+    // should use te mcs of the destination, rather that of intermediate node
     uint8_t mcs = 0;
-    if (intermediateDest== UINT16_MAX){
+    if ((intermediateDest== UINT16_MAX) || (m_relayLcidRntiMap.find(bsrIt->second.lcid) == m_relayLcidRntiMap.end())){
       // as the original
       mcs = GetMcs (rntiDest); // select the MCS
-      NS_LOG_DEBUG("rnti " << rntiDest << " mcs = " << uint16_t(mcs));
+      // NS_LOG_DEBUG("rnti " << rntiDest << " mcs = " << uint16_t(mcs));
     }else{
       // we are in a relay path, thus use the intermediate rnti
       mcs = GetMcs (intermediateDest); // select the MCS
@@ -378,7 +492,7 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
     info.m_dci.m_tbSize = assignedBytes; // the TB size in bytes
     info.m_ttiType = mmwave::TtiAllocInfo::TddTtiType::DATA; // the TB carries data
 
-    NS_LOG_DEBUG("info.m_dci.m_tbSize =\t" << info.m_dci.m_tbSize);
+    // NS_LOG_DEBUG("info.m_dci.m_tbSize =\t" << info.m_dci.m_tbSize);
 
     allocationInfo.m_ttiAllocInfo.push_back (info);
     allocationInfo.m_numSymAlloc += assignedSymbols;
@@ -409,7 +523,17 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
     m_schedulingTrace (traceInfo);
 
     // notify the RLC
-    LteMacSapUser* macSapUser = m_lcidToMacSap.find (bsrIt->second.lcid)->second;
+    // NS_LOG_DEBUG("Notifying rlc: local " << GetRnti() << " inter " << intermediateDest 
+    //           << " dest " << rntiDest << " lcid " << (uint32_t)bsrIt->second.lcid);
+    // original
+    // LteMacSapUser* macSapUser = m_lcidToMacSap.find (bsrIt->second.lcid)->second;
+    // modified
+    LteMacSapUser* macSapUser;
+    // if the lcid does not belong to the relay, we use the local rlc
+    if (m_relayLcidRntiMap.find(bsrIt->second.lcid) == m_relayLcidRntiMap.end()){
+      macSapUser = m_lcidToMacSap.find (bsrIt->second.lcid)->second;
+    }
+    // end modification
     LteMacSapUser::TxOpportunityParameters params;
     params.bytes = assignedBytes;  // the number of bytes to transmit
     params.layer = 0;  // the layer of transmission (MIMO) (NOT USED)
@@ -419,8 +543,18 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
     // though it doesn't change anything changing rntiDest in these params
     params.rnti = rntiDest; // the C-RNTI identifying the destination
     params.lcid = bsrIt->second.lcid; // the logical channel id
-    macSapUser->NotifyTxOpportunity (params);
-
+    // original
+    // macSapUser->NotifyTxOpportunity (params);
+    // modified
+    // we only notify the rlc of new tx opportunity if it is traffic
+    // being generated by this node
+    // if the traffic is relay traffic, we do not have to inform the rlc
+    if (m_relayLcidRntiMap.find(bsrIt->second.lcid) == m_relayLcidRntiMap.end()){
+      // NS_LOG_DEBUG("Notifying rlc: local " << GetRnti());
+      macSapUser->NotifyTxOpportunity (params);
+    }
+    // end modification
+    // NS_LOG_DEBUG("Update bsr ");
     // update the entry in the m_bufferStatusReportMap (delete it if no
     // further resources are needed)
     bsrIt = UpdateBufferStatusReport (bsrIt->second.lcid, assignedBytes);
@@ -450,6 +584,7 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
 std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters>::iterator
 MmWaveSidelinkMac::UpdateBufferStatusReport (uint8_t lcid, uint32_t assignedBytes)
 {
+  // NS_LOG_FUNCTION(this << (uint32_t)lcid);
   // find the corresponding entry in the map
   auto bsrIt = m_bufferStatusReportMap.find (lcid);
 
@@ -495,6 +630,14 @@ MmWaveSidelinkMac::UpdateBufferStatusReport (uint8_t lcid, uint32_t assignedByte
   // delete the entry in the map if no further resources are needed
   if (bsrIt->second.statusPduSize == 0 && bsrIt->second.retxQueueSize == 0  && bsrIt->second.txQueueSize == 0)
   {
+    // erasing also from relay lcid and rnti map
+    // NS_LOG_DEBUG("Rem lcid " << (uint32_t)bsrIt->second.lcid 
+    //             << " rnti " << bsrIt->second.rnti);
+    auto relayLcidRntiIt = m_relayLcidRntiMap.find(bsrIt->second.lcid);
+    if (relayLcidRntiIt != m_relayLcidRntiMap.end()){
+      m_relayLcidRntiMap.erase(relayLcidRntiIt);
+    }
+
     bsrIt = m_bufferStatusReportMap.erase (bsrIt);
   }
   else
@@ -514,7 +657,7 @@ MmWaveSidelinkMac::DoReportBufferStatus (LteMacSapProvider::ReportBufferStatusPa
   if (bsrIt != m_bufferStatusReportMap.end ())
   {
     bsrIt->second = params;
-    NS_LOG_DEBUG("Update buffer status report for LCID " << uint32_t(params.lcid));
+    // NS_LOG_DEBUG("Update buffer status report for LCID " << uint32_t(params.lcid));
   }
   else
   {
@@ -556,8 +699,16 @@ MmWaveSidelinkMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters param
   LteRadioBearerTag tag (params.rnti, params.lcid, params.layer);
   params.pdu->AddPacketTag (tag);
 
+  MmWaveMacPacketRelayTag packetRelayTag;
+  packetRelayTag.SetDestinationRnti(params.rnti);
+  packetRelayTag.SetSourceRnti(GetRnti());
+  params.pdu->AddPacketTag(packetRelayTag);
+  m_relayLatency(params.pdu, GetRnti(), GetRnti(), params.rnti, 1);
+
   //insert the packet at the end of the buffer
-  NS_LOG_DEBUG("Add packet for RNTI " << params.rnti << " LCID " << uint32_t(params.lcid));
+  // NS_LOG_DEBUG("Add packet local " << GetRnti() 
+  //               << " for RNTI " << params.rnti << 
+  //               " LCID " << uint32_t(params.lcid));
 
   auto it = m_txBufferMap.find (params.rnti);
   if (it == m_txBufferMap.end ())
@@ -572,10 +723,46 @@ MmWaveSidelinkMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters param
   }
 }
 // original
+// void
+// MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
+// {
+//   NS_LOG_FUNCTION(this << p);
+//   LteMacSapUser::ReceivePduParameters rxPduParams;
+//   LteRadioBearerTag tag;
+//   p->PeekPacketTag (tag);
+//   // pick the right lcid associated to this communication. As discussed, this can be done via a dedicated SidelinkBearerTag
+//   rxPduParams.p = p;
+//   rxPduParams.rnti = tag.GetRnti ();
+//   rxPduParams.lcid = tag.GetLcid ();
+//   // NS_LOG_DEBUG ("Received a packet "  << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
+//   LteMacSapUser* macSapUser = m_lcidToMacSap.find(rxPduParams.lcid)->second;
+//   macSapUser->ReceivePdu (rxPduParams);
+// }
+// end original
+// modified
 void
 MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
 {
   NS_LOG_FUNCTION(this << p);
+  // check if is relay
+  Ptr<Packet> packet = p->Copy();
+  // get the relay tag
+  MmWaveMacPacketRelayTag peekPacketRelayTag;
+  bool hasRelayTag = p->RemovePacketTag(peekPacketRelayTag);
+  uint16_t destinationRnti = peekPacketRelayTag.GetDestinationRnti();
+  uint16_t sourceRnti = peekPacketRelayTag.GetSourceRnti();
+  // uint16_t intermediateRnti = peekPacketRelayTag.GetIntermediateRnti();
+
+  // if (packetRelayTag.GetIntermediateRnti()!=UINT16_MAX){
+  //   NS_LOG_UNCOND("Dest " << destinationRnti << " source " << sourceRnti
+  //             << " inter " << intermediateRnti << " local " << GetRnti()
+  //             << " packet size " << p->GetSize());
+  // }
+
+  // it means we have a relay packet
+  // first we trigger the device callback to store the relay packet
+  // m_forwardUpCallback(packet);
+  // and send directly to the destination
   LteMacSapUser::ReceivePduParameters rxPduParams;
   LteRadioBearerTag tag;
   p->PeekPacketTag (tag);
@@ -583,69 +770,77 @@ MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
   rxPduParams.p = p;
   rxPduParams.rnti = tag.GetRnti ();
   rxPduParams.lcid = tag.GetLcid ();
-  // NS_LOG_DEBUG ("Received a packet "  << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
+  NS_LOG_DEBUG ("Received a packet " << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
   LteMacSapUser* macSapUser = m_lcidToMacSap.find(rxPduParams.lcid)->second;
+  // we send the packet to upper layers anyway
+  // in case of a relay, it will only store in the traces
   macSapUser->ReceivePdu (rxPduParams);
+
+
+  m_relayLatency(packet, GetRnti(), sourceRnti, destinationRnti, 2);
+
+  // intermediate node
+  if (destinationRnti!=GetRnti()){
+    NS_LOG_DEBUG("Relay in inter " << GetRnti() 
+                // << " - " << intermediateRnti 
+                // << " source " << sourceRnti 
+                << " dest " << destinationRnti
+                << " lcid " << (uint32_t)tag.GetLcid());
+    
+    // Ptr<Packet> packet = p->Copy();
+    // MmWaveMacPacketRelayTag packetRelayTag;
+    // packet->RemovePacketTag(packetRelayTag);
+    
+    // LteRadioBearerTag tagRelay;
+    // packet->PeekPacketTag(tagRelay);
+    LteMacSapProvider::TransmitPduParameters txPduParams;
+    // txPduParams.rnti = tagRelay.GetRnti();
+    // add relay tag to the packet
+    // packet tag we add it in DoSlotIndication
+    // packet->AddPacketTag(packetRelayTag);
+    txPduParams.pdu = packet;
+    txPduParams.rnti = destinationRnti;
+    txPduParams.lcid = tag.GetLcid();
+    txPduParams.layer = tag.GetLayer();
+    // shouldn't change anything, just reput it in the buffer
+    // first check if there is an antry with the rnti in the buffer
+    auto it = m_txBufferMap.find (destinationRnti);// the destination RNTI
+    if (it == m_txBufferMap.end ())
+    {
+      std::list<LteMacSapProvider::TransmitPduParameters> txBuffer;
+      txBuffer.push_back (txPduParams);
+      m_txBufferMap.insert (std::make_pair (destinationRnti, txBuffer));
+    }
+    else
+    {
+      it->second.push_back (txPduParams);
+    }
+
+    // update the buffer status report map
+    
+    auto bsrIt = m_bufferStatusReportMap.find (tag.GetLcid());
+    if (bsrIt != m_bufferStatusReportMap.end ())
+    {
+      // add tx queue size of the relay if exists
+      bsrIt->second.txQueueSize+=packet->GetSize();
+    }else{
+      // if does not exist 
+      LteMacSapProvider::ReportBufferStatusParameters params;
+      params.rnti = destinationRnti;
+      params.lcid = tag.GetLcid();
+      params.txQueueSize = packet->GetSize();
+      params.txQueueHolDelay = 0;
+      params.retxQueueSize = 0;
+      params.retxQueueHolDelay = 0;
+      params.statusPduSize = 0;
+      m_bufferStatusReportMap.insert (std::make_pair (tag.GetLcid(), params));
+    }
+    // inser in the map of lcid-s 
+    if (m_relayLcidRntiMap.find(tag.GetLcid()) == m_relayLcidRntiMap.end()){
+      m_relayLcidRntiMap.insert(std::make_pair (tag.GetLcid(), destinationRnti));
+    }
+  }
 }
-// end original
-// modified
-// void
-// MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
-// {
-//   NS_LOG_FUNCTION(this << p);
-//   // check if is relay
-//   Ptr<Packet> packet = p->Copy();
-//   LteRadioBearerTag tagRelay;
-//   packet->RemovePacketTag(tagRelay);
-//   // get the relay tag
-//   MmWavePacketRelayTag packetRelayTag;
-//   bool hasRelayTag = packet->PeekPacketTag(packetRelayTag);
-//   uint16_t destinationRnti = packetRelayTag.GetDestinationRnti();
-//   uint16_t sourceRnti = packetRelayTag.GetSourceRnti();
-//   uint16_t intermediateRnti = packetRelayTag.GetIntermediateRnti();
-
-//   if (packetRelayTag.GetIntermediateRnti()!=UINT16_MAX){
-//     NS_LOG_UNCOND("Dest " << destinationRnti << " source " << sourceRnti
-//               << " inter " << intermediateRnti << " local " << GetRnti()
-//               << " packet size " << p->GetSize());
-//   }
-
-//   // it means we have a relay packet
-//   // first we trigger the device callback to store the relay packet
-//   m_forwardUpCallback(packet);
-//   // and send directly to the destination
-
-
-//   // if (destinationRnti!=GetRnti()){
-//   //   LteMacSapProvider::TransmitPduParameters txPduParams;
-//   //   // txPduParams.rnti = tagRelay.GetRnti();
-//   //   txPduParams.rnti = destinationRnti;
-//   //   txPduParams.lcid = tagRelay.GetLcid();
-//   //   txPduParams.layer = tagRelay.GetLayer();
-//   //   txPduParams.pdu=packet;
-//   //   // finally transmit
-//   //   DoTransmitPdu(txPduParams);
-//   //   return;
-//   // }
-
-//   if (destinationRnti==GetRnti()){
-//     LteMacSapUser::ReceivePduParameters rxPduParams;
-
-//     LteRadioBearerTag tag;
-//     p->PeekPacketTag (tag);
-
-//     // pick the right lcid associated to this communication. As discussed, this can be done via a dedicated SidelinkBearerTag
-//     rxPduParams.p = p;
-//     rxPduParams.rnti = tag.GetRnti ();
-//     rxPduParams.lcid = tag.GetLcid ();
-
-//     NS_LOG_DEBUG ("Received a packet " << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
-
-//     LteMacSapUser* macSapUser = m_lcidToMacSap.find(rxPduParams.lcid)->second;
-//     macSapUser->ReceivePdu (rxPduParams);
-
-//   }
-// }
 
 // end modification
 
@@ -727,7 +922,7 @@ MmWaveSidelinkMac::DoSlSinrReport (const SpectrumValue& sinr, uint16_t rnti, uin
 uint8_t
 MmWaveSidelinkMac::GetMcs (uint16_t rnti)
 {
-  NS_LOG_FUNCTION (this);
+  // NS_LOG_FUNCTION (this);
 
   uint8_t mcs; // the selected MCS
   if (m_useAmc)

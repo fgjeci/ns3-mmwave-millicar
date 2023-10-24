@@ -22,6 +22,7 @@
 
 #include "ns3/log.h"
 #include "ns3/tag.h"
+#include "ns3/simulator.h"
 
 namespace ns3
 {
@@ -183,6 +184,106 @@ MmWavePacketRelayTag::operator==(const MmWavePacketRelayTag& b) const
         return true;
     }
     return false;
+}
+
+//////////////////////////// The Mac relay
+
+
+TypeId
+MmWaveMacPacketRelayTag::GetTypeId(void)
+{
+    static TypeId tid = TypeId("ns3::MmWaveMacPacketRelayTag")
+                            .SetParent<Tag>()
+                            .AddConstructor<MmWaveMacPacketRelayTag>();
+    return tid;
+}
+
+MmWaveMacPacketRelayTag::MmWaveMacPacketRelayTag():
+    m_ts(Simulator::Now().GetTimeStep())
+{
+}
+
+TypeId
+MmWaveMacPacketRelayTag::GetInstanceTypeId(void) const
+{
+    return GetTypeId();
+}
+
+uint32_t
+MmWaveMacPacketRelayTag::GetSerializedSize(void) const
+{
+    // return 2 + 4 + m_address.GetSerializedSize();
+    return 6 + 8;
+}
+
+void
+MmWaveMacPacketRelayTag::Serialize(TagBuffer i) const
+{
+    // Buffer::Iterator i = start;
+    i.WriteU16(m_destinationRnti);
+    i.WriteU16(m_sourceRnti);
+    i.WriteU16(m_intermediateRnti);
+    i.WriteU64(m_ts);
+}
+
+void
+MmWaveMacPacketRelayTag::Deserialize(TagBuffer i)
+{
+    m_destinationRnti = (uint16_t)i.ReadU16();
+    m_sourceRnti = (uint16_t)i.ReadU16();
+    m_intermediateRnti = (uint16_t)i.ReadU16();
+    m_ts = (uint64_t)i.ReadU64();
+}
+
+uint16_t
+MmWaveMacPacketRelayTag::GetDestinationRnti() const
+{
+    return m_destinationRnti;
+}
+
+uint16_t
+MmWaveMacPacketRelayTag::GetSourceRnti() const
+{
+    return  m_sourceRnti;
+}
+
+uint16_t
+MmWaveMacPacketRelayTag::GetIntermediateRnti() const
+{
+    return m_intermediateRnti;
+}
+
+void
+MmWaveMacPacketRelayTag::SetDestinationRnti(uint16_t destinationRnti)
+{
+    m_destinationRnti = destinationRnti;
+}
+
+void
+MmWaveMacPacketRelayTag::SetSourceRnti(uint16_t sourceRnti)
+{
+    m_sourceRnti = sourceRnti;
+}
+
+void
+MmWaveMacPacketRelayTag::SetIntermediateRnti(uint16_t intermediateRnti)
+{
+    m_intermediateRnti = intermediateRnti;
+}
+
+Time
+MmWaveMacPacketRelayTag::GetTs() const
+{
+    NS_LOG_FUNCTION(this);
+    return TimeStep(m_ts);
+}
+
+void
+MmWaveMacPacketRelayTag::Print(std::ostream& os) const
+{
+    os << "Destination Rnti " << m_destinationRnti;
+    // os << " Protocol Typy number =" << (uint32_t)m_protocolNumber;
+    // os << ", address=" << m_address;
 }
 
 } // namespace ns3

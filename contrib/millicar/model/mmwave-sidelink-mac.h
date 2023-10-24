@@ -164,6 +164,9 @@ public:
   void AddRelayPath(uint16_t localRnti, uint16_t destRnti, uint16_t intermediateRnti);
 
   void PrintRelay();
+  void UpdateDecentralizedRelayPath(mmwave::SfnSf timingInfo, uint16_t rnti, double directLinkSnr);
+
+  void UpdateDecentralizedAllRelayPaths(mmwave::SfnSf timingInfo);
   // end modification
 
 private:
@@ -236,7 +239,10 @@ private:
 
   // map to be used when relay functionality is implemented
   std::map<uint16_t, std::map<uint16_t, uint16_t>> m_relayPaths;
+  // the threshold of snr for which a decentralized relay is trigerred
+  double m_decentralizedRelaySnr;
 
+  bool m_hasDecentralizedRelay{false};
 
   // modified
   Callback<void, E2AP_PDU* > m_sendE2MessageCallback; //!< upward callback to the NetDevice
@@ -247,10 +253,18 @@ private:
   // trace sources
   TracedCallback<SlSchedulingCallback> m_schedulingTrace; //!< trace source returning information regarding the scheduling
 
-
   Ptr<NetDevice> m_netDevice;
 
   TracedCallback<mmwave::SfnSf, uint16_t, mmwave::MmWaveMacSchedSapProvider::SchedDlRlcBufferReqParameters> m_rlcBufferStatusTrace;
+
+  // the decentralized relay snr 
+  TracedCallback<mmwave::SfnSf, uint16_t, uint16_t, uint16_t, double, double> m_decentralizedRelaySnrTrace;
+
+  // traces of the latency
+  // packet, local, souce and destination rnti and position number
+  TracedCallback<Ptr<Packet>, uint16_t, uint16_t, uint16_t, uint8_t> m_relayLatency;
+
+  std::map<uint8_t, uint16_t> m_relayLcidRntiMap;
 
   uint32_t m_frame {0}; //!< frame number
   uint8_t m_subframe {0}; //!< subframe number

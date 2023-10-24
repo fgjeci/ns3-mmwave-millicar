@@ -121,6 +121,7 @@ public:
   // modified
   struct SinrMcsPair
   {
+      double snr;
       double sinr; ///< RNTI
       uint8_t mcs = 0; ///< DRBID
       uint32_t number_of_samples = 0;
@@ -166,9 +167,9 @@ public:
   std::map<uint16_t, std::map<uint16_t, SinrMcsPair>> m_l3sinrMillicarMap;
 
 
-  static void RegisterPeerDevicesSinrReportReadingCallback(Ptr<MmWaveEnbNetDevice> netDev, std::string context, uint16_t localRnti, uint64_t destRnti, double avgSinr); // , double positionX, double positionY
+  static void RegisterPeerDevicesSinrReportReadingCallback(Ptr<MmWaveEnbNetDevice> netDev, std::string context, uint16_t localRnti, uint64_t destRnti, double avgSnr, double avgSinr); // , double positionX, double positionY
 
-  void RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uint64_t destRnti, double avgSinr); // , double positionX, double positionY
+  void RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uint64_t destRnti, double avgSnr, double avgSinr); // , double positionX, double positionY
 
   std::map<uint16_t, std::map<uint16_t, SinrMcsPair>> m_pairsSinrMillicarMap;
   
