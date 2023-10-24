@@ -172,7 +172,7 @@ public:
 
   void DoDecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti);
 
-  // bool DoNeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold);
+  bool DoNeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold);
 
   std::pair<const uint64_t, double> DoGetBestRelayNeighbor();
   
@@ -355,7 +355,7 @@ public:
 
   Ptr<MmWaveSidelinkSpectrumPhy> GetSpectrum () const override;
   
-  // bool NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold) override;
+  bool NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold) override;
 
   void DecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti) override;
 

@@ -63,11 +63,11 @@ MacSidelinkMemberPhySapProvider::GetSpectrum () const
 }
 
 // modified
-// bool
-// MacSidelinkMemberPhySapProvider::NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold)
-// {
-//   return m_phy->DoNeedRelayPath (destinationRnti, relaySnrThreshold);
-// }
+bool
+MacSidelinkMemberPhySapProvider::NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold)
+{
+  return m_phy->DoNeedRelayPath (destinationRnti, relaySnrThreshold);
+}
 
 void
 MacSidelinkMemberPhySapProvider::DecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti){
@@ -1051,19 +1051,19 @@ MmWaveSidelinkPhy::DoUpdateDecentralizedFullRelayPath(uint16_t destRnti, uint16_
 }
 
 // check whether a relay path is needed between local rnti and the destination rnti
-// bool
-// MmWaveSidelinkPhy::DoNeedRelayPath(uint16_t rnti, double relaySnrThreshold){
-//   NS_LOG_FUNCTION (this);
+bool
+MmWaveSidelinkPhy::DoNeedRelayPath(uint16_t rnti, double relaySnrThreshold){
+  NS_LOG_FUNCTION (this);
 
-//   std::map<uint64_t, SinrReportStruct>::iterator sinrIt = m_sinrMillicarPairDevicesMap.find(rnti);
-//   if ((sinrIt!=m_sinrMillicarPairDevicesMap.end())){
-//     // check the level of snr/sinr in the map
-//     if (sinrIt->second.snr<=m_decentralizedRelaySnr){
-//       return true;
-//     }
-//   }
-//   return false;
-// }
+  std::map<uint64_t, SinrReportStruct>::iterator sinrIt = m_sinrMillicarPairDevicesMap.find(rnti);
+  // if ((sinrIt!=m_sinrMillicarPairDevicesMap.end())){
+  //   // check the level of snr/sinr in the map
+  //   if (sinrIt->second.snr<=m_decentralizedRelaySnr){
+  //     return true;
+  //   }
+  // }
+  return false;
+}
 
 void
 MmWaveSidelinkPhy::DoDecentralizedRemoveRelayPath(uint16_t localRnti, uint16_t destRnti){

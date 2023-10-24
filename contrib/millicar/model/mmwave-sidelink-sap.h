@@ -59,7 +59,7 @@ public:
 
   // modified
 
-  // virtual bool NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold) = 0;
+  virtual bool NeedRelayPath (uint16_t destinationRnti, double relaySnrThreshold) = 0;
 
   virtual std::pair<const uint64_t, double> GetBestRelayNeighbor() = 0;
 
