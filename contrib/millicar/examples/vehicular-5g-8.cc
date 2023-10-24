@@ -220,6 +220,8 @@ int main (int argc, char *argv[])
   std::string ltePlmnId = "111";
   uint16_t e2startingPort = 38470;
   bool isXappEnabled = false;
+  bool isDecentralizedRelay = false;
+  double decentralizedRelaySnr = 5;
   uint16_t activeGroups = 6;
 
   CommandLine cmd;
@@ -234,6 +236,8 @@ int main (int argc, char *argv[])
   cmd.AddValue ("transmitPowerdBm", "Transmit power of ues", txpower);
   cmd.AddValue ("ltePlmnId", "Lte plmn id, shall be used to distinguish simulation", ltePlmnId);
   cmd.AddValue ("e2StartingPort", "starting port number for the gnb e2 termination; destination is same", e2startingPort);
+  cmd.AddValue ("isDecentralizedRelay", "Define if the simulation has decentralized relay", isDecentralizedRelay);
+  cmd.AddValue ("decentralizedRelaySnr", "Define the snr value to trigger decentralized relay", decentralizedRelaySnr);
   cmd.AddValue ("isXappEnabled", "Define if the simulation has the support of Xapp", isXappEnabled);
   cmd.AddValue ("activeGroups", "Number of groups active", activeGroups);  
   cmd.Parse (argc, argv);
@@ -302,6 +306,7 @@ int main (int argc, char *argv[])
   mmwave::MacBsrStats macBsrStats;
   mmwave::DlSchedulingStats dlSchedulingStats ;
   mmwave::DecentralizedRelayStats decentralizedRelayStats ;
+  mmwave::RelayLatencyStats relayLatencyStats ;
 
   sinrReportStats.SetDb(&db, "sinrReportStats");
   allPairssinrReportStats.SetDb(&db, "allPairsReportStats");
@@ -310,6 +315,7 @@ int main (int argc, char *argv[])
   macBsrStats.SetDb(&db, "macBsr");
   dlSchedulingStats.SetDb(&db, "dlSchedulingStats");
   decentralizedRelayStats.SetDb(&db, "decentralizedRelayStats");
+  relayLatencyStats.SetDb(&db, "relayLatencyStats");
   
 
   // create the nodes
@@ -318,11 +324,11 @@ int main (int argc, char *argv[])
                 ueNodesGroup5Random, ueNodesGroup6Random, ueNodesGroup7Random;
   NodeContainer ueNodes, ueNodesGroup1, ueNodesGroup2, ueNodesGroup3, 
                 ueNodesGroup4, ueNodesGroup5, ueNodesGroup6, ueNodesGroup7;
-  NodeContainer inactiveNodes1, inactiveNodes2, inactiveNodesAll;
-  inactiveNodes1.Create(8);
-  inactiveNodes2.Create(8);
-  inactiveNodesAll.Add(inactiveNodes1);
-  inactiveNodesAll.Add(inactiveNodes2);
+  // NodeContainer inactiveNodes1, inactiveNodes2, inactiveNodesAll;
+  // inactiveNodes1.Create(8);
+  // inactiveNodes2.Create(8);
+  // inactiveNodesAll.Add(inactiveNodes1);
+  // inactiveNodesAll.Add(inactiveNodes2);
 
   ueNodes.Create (8);
   ueNodesGroup1.Create(8);
@@ -376,82 +382,82 @@ int main (int argc, char *argv[])
   Ptr<UniformDiscPositionAllocator> uePositionAllocGroup6 = CreateObject<UniformDiscPositionAllocator> ();  
   Ptr<UniformDiscPositionAllocator> uePositionAllocGroup7 = CreateObject<UniformDiscPositionAllocator> ();  
 
-  Ptr<UniformDiscPositionAllocator> uePositionAllocInactiveGroup1 = CreateObject<UniformDiscPositionAllocator> ();  
-  Ptr<UniformDiscPositionAllocator> uePositionAllocInactiveGroup2 = CreateObject<UniformDiscPositionAllocator> ();  
+  // Ptr<UniformDiscPositionAllocator> uePositionAllocInactiveGroup1 = CreateObject<UniformDiscPositionAllocator> ();  
+  // Ptr<UniformDiscPositionAllocator> uePositionAllocInactiveGroup2 = CreateObject<UniformDiscPositionAllocator> ();  
 
 
   double rho = 30;
   double center_x = -20;
   double center_y = 60;
-  Ptr<RandomBoxPositionAllocator> randomBoxInactiveGroup1 = CreateObject<RandomBoxPositionAllocator>();
-  Ptr<UniformRandomVariable> randomBoxPositionXInactiveGroup1 = CreateObject<UniformRandomVariable>();
-  Ptr<UniformRandomVariable> randomBoxPositionYInactiveGroup1 = CreateObject<UniformRandomVariable>();
-  Ptr<ConstantRandomVariable> constBoxPositionZInactiveGroup1 = CreateObject<ConstantRandomVariable>();
-  constBoxPositionZInactiveGroup1->SetAttribute("Constant", DoubleValue(1.5));
-  randomBoxPositionXInactiveGroup1->SetAttribute ("Min", DoubleValue (-50));
-  randomBoxPositionXInactiveGroup1->SetAttribute ("Max", DoubleValue (0));
-  randomBoxPositionYInactiveGroup1->SetAttribute ("Min", DoubleValue (0));
-  randomBoxPositionYInactiveGroup1->SetAttribute ("Max", DoubleValue (100));
-  randomBoxInactiveGroup1->SetX(randomBoxPositionXInactiveGroup1);
-  randomBoxInactiveGroup1->SetY(randomBoxPositionYInactiveGroup1);
-  randomBoxInactiveGroup1->SetZ(constBoxPositionZInactiveGroup1);
+  // Ptr<RandomBoxPositionAllocator> randomBoxInactiveGroup1 = CreateObject<RandomBoxPositionAllocator>();
+  // Ptr<UniformRandomVariable> randomBoxPositionXInactiveGroup1 = CreateObject<UniformRandomVariable>();
+  // Ptr<UniformRandomVariable> randomBoxPositionYInactiveGroup1 = CreateObject<UniformRandomVariable>();
+  // Ptr<ConstantRandomVariable> constBoxPositionZInactiveGroup1 = CreateObject<ConstantRandomVariable>();
+  // constBoxPositionZInactiveGroup1->SetAttribute("Constant", DoubleValue(1.5));
+  // randomBoxPositionXInactiveGroup1->SetAttribute ("Min", DoubleValue (-50));
+  // randomBoxPositionXInactiveGroup1->SetAttribute ("Max", DoubleValue (0));
+  // randomBoxPositionYInactiveGroup1->SetAttribute ("Min", DoubleValue (0));
+  // randomBoxPositionYInactiveGroup1->SetAttribute ("Max", DoubleValue (100));
+  // randomBoxInactiveGroup1->SetX(randomBoxPositionXInactiveGroup1);
+  // randomBoxInactiveGroup1->SetY(randomBoxPositionYInactiveGroup1);
+  // randomBoxInactiveGroup1->SetZ(constBoxPositionZInactiveGroup1);
 
-  // randomBoxPosition->SetX();
-  uePositionAllocInactiveGroup1->SetX(center_x);
-  uePositionAllocInactiveGroup1->SetY(center_y);
-  uePositionAllocInactiveGroup1->SetZ(1.5);
-  uePositionAllocInactiveGroup1->SetRho(rho);
+  // // randomBoxPosition->SetX();
+  // uePositionAllocInactiveGroup1->SetX(center_x);
+  // uePositionAllocInactiveGroup1->SetY(center_y);
+  // uePositionAllocInactiveGroup1->SetZ(1.5);
+  // uePositionAllocInactiveGroup1->SetRho(rho);
 
-  Ptr<UniformRandomVariable> speedRandomVariableInactiveGroup1 = CreateObject<UniformRandomVariable> ();
-  speedRandomVariableInactiveGroup1->SetAttribute ("Min", DoubleValue (2.0));
-  speedRandomVariableInactiveGroup1->SetAttribute ("Max", DoubleValue (4.0));
+  // Ptr<UniformRandomVariable> speedRandomVariableInactiveGroup1 = CreateObject<UniformRandomVariable> ();
+  // speedRandomVariableInactiveGroup1->SetAttribute ("Min", DoubleValue (2.0));
+  // speedRandomVariableInactiveGroup1->SetAttribute ("Max", DoubleValue (4.0));
 
-  uemobilityInactiveGroup1.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-                              PointerValue (speedRandomVariableInactiveGroup1), "Bounds",
-                              // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
-                              // center_y-3*rho, center_y+3*rho))
-                              RectangleValue (Rectangle (-60, 20, -10, 120))
-                              );
+  // uemobilityInactiveGroup1.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
+  //                             PointerValue (speedRandomVariableInactiveGroup1), "Bounds",
+  //                             // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
+  //                             // center_y-3*rho, center_y+3*rho))
+  //                             RectangleValue (Rectangle (-60, 20, -10, 120))
+  //                             );
 
-  uemobilityInactiveGroup1.SetPositionAllocator(uePositionAllocInactiveGroup1);
-  uemobilityInactiveGroup1.Install (inactiveNodes1);
+  // uemobilityInactiveGroup1.SetPositionAllocator(uePositionAllocInactiveGroup1);
+  // uemobilityInactiveGroup1.Install (inactiveNodes1);
 
   
-  rho = 30;
-  center_x = 130;
-  center_y = 60;
-  Ptr<RandomBoxPositionAllocator> randomBoxInactiveGroup2 = CreateObject<RandomBoxPositionAllocator>();
-  Ptr<UniformRandomVariable> randomBoxPositionXInactiveGroup2 = CreateObject<UniformRandomVariable>();
-  Ptr<UniformRandomVariable> randomBoxPositionYInactiveGroup2 = CreateObject<UniformRandomVariable>();
-  Ptr<ConstantRandomVariable> constBoxPositionZInactiveGroup2 = CreateObject<ConstantRandomVariable>();
-  constBoxPositionZInactiveGroup2->SetAttribute("Constant", DoubleValue(1.5));
-  randomBoxPositionXInactiveGroup2->SetAttribute ("Min", DoubleValue (100));
-  randomBoxPositionXInactiveGroup2->SetAttribute ("Max", DoubleValue (160));
-  randomBoxPositionYInactiveGroup2->SetAttribute ("Min", DoubleValue (0));
-  randomBoxPositionYInactiveGroup2->SetAttribute ("Max", DoubleValue (100));
-  randomBoxInactiveGroup2->SetX(randomBoxPositionXInactiveGroup2);
-  randomBoxInactiveGroup2->SetY(randomBoxPositionYInactiveGroup2);
-  randomBoxInactiveGroup2->SetZ(constBoxPositionZInactiveGroup2);
+  // rho = 30;
+  // center_x = 130;
+  // center_y = 60;
+  // Ptr<RandomBoxPositionAllocator> randomBoxInactiveGroup2 = CreateObject<RandomBoxPositionAllocator>();
+  // Ptr<UniformRandomVariable> randomBoxPositionXInactiveGroup2 = CreateObject<UniformRandomVariable>();
+  // Ptr<UniformRandomVariable> randomBoxPositionYInactiveGroup2 = CreateObject<UniformRandomVariable>();
+  // Ptr<ConstantRandomVariable> constBoxPositionZInactiveGroup2 = CreateObject<ConstantRandomVariable>();
+  // constBoxPositionZInactiveGroup2->SetAttribute("Constant", DoubleValue(1.5));
+  // randomBoxPositionXInactiveGroup2->SetAttribute ("Min", DoubleValue (100));
+  // randomBoxPositionXInactiveGroup2->SetAttribute ("Max", DoubleValue (160));
+  // randomBoxPositionYInactiveGroup2->SetAttribute ("Min", DoubleValue (0));
+  // randomBoxPositionYInactiveGroup2->SetAttribute ("Max", DoubleValue (100));
+  // randomBoxInactiveGroup2->SetX(randomBoxPositionXInactiveGroup2);
+  // randomBoxInactiveGroup2->SetY(randomBoxPositionYInactiveGroup2);
+  // randomBoxInactiveGroup2->SetZ(constBoxPositionZInactiveGroup2);
 
-  // randomBoxPosition->SetX();
-  uePositionAllocInactiveGroup2->SetX(center_x);
-  uePositionAllocInactiveGroup2->SetY(center_y);
-  uePositionAllocInactiveGroup2->SetZ(1.5);
-  uePositionAllocInactiveGroup2->SetRho(rho);
+  // // randomBoxPosition->SetX();
+  // uePositionAllocInactiveGroup2->SetX(center_x);
+  // uePositionAllocInactiveGroup2->SetY(center_y);
+  // uePositionAllocInactiveGroup2->SetZ(1.5);
+  // uePositionAllocInactiveGroup2->SetRho(rho);
 
-  Ptr<UniformRandomVariable> speedRandomVariableInactiveGroup2 = CreateObject<UniformRandomVariable> ();
-  speedRandomVariableInactiveGroup2->SetAttribute ("Min", DoubleValue (2.0));
-  speedRandomVariableInactiveGroup2->SetAttribute ("Max", DoubleValue (4.0));
+  // Ptr<UniformRandomVariable> speedRandomVariableInactiveGroup2 = CreateObject<UniformRandomVariable> ();
+  // speedRandomVariableInactiveGroup2->SetAttribute ("Min", DoubleValue (2.0));
+  // speedRandomVariableInactiveGroup2->SetAttribute ("Max", DoubleValue (4.0));
 
-  uemobilityInactiveGroup2.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
-                              PointerValue (speedRandomVariableInactiveGroup2), "Bounds",
-                              // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
-                              // center_y-3*rho, center_y+3*rho))
-                              RectangleValue (Rectangle (90, 170, -10, 120))
-                              );
+  // uemobilityInactiveGroup2.SetMobilityModel ("ns3::RandomWalk2dOutdoorMobilityModel", "Speed",
+  //                             PointerValue (speedRandomVariableInactiveGroup2), "Bounds",
+  //                             // RectangleValue (Rectangle (center_x-3*rho, center_x+3*rho, 
+  //                             // center_y-3*rho, center_y+3*rho))
+  //                             RectangleValue (Rectangle (90, 170, -10, 120))
+  //                             );
 
-  uemobilityInactiveGroup2.SetPositionAllocator(uePositionAllocInactiveGroup2);
-  uemobilityInactiveGroup2.Install (inactiveNodes2);
+  // uemobilityInactiveGroup2.SetPositionAllocator(uePositionAllocInactiveGroup2);
+  // uemobilityInactiveGroup2.Install (inactiveNodes2);
 
 
   rho = 20;
@@ -873,8 +879,8 @@ int main (int argc, char *argv[])
   BuildingsHelper::Install (ueNodesGroup5);
   BuildingsHelper::Install (ueNodesGroup6);
   BuildingsHelper::Install (ueNodesGroup7);
-  BuildingsHelper::Install (inactiveNodes1);
-  BuildingsHelper::Install (inactiveNodes2);
+  // BuildingsHelper::Install (inactiveNodes1);
+  // BuildingsHelper::Install (inactiveNodes2);
 
   
   // create and configure the helper
@@ -902,8 +908,8 @@ int main (int argc, char *argv[])
   NetDeviceContainer ueNetDevGroup5 = helper->InstallUeDevice (ueNodesGroup5);
   NetDeviceContainer ueNetDevGroup6 = helper->InstallUeDevice (ueNodesGroup6);
   NetDeviceContainer ueNetDevGroup7 = helper->InstallUeDevice (ueNodesGroup7);
-  NetDeviceContainer ueNetDevInactiveGroup1 = helper->InstallUeDevice (inactiveNodes1);
-  NetDeviceContainer ueNetDevInactiveGroup2 = helper->InstallUeDevice (inactiveNodes2);
+  // NetDeviceContainer ueNetDevInactiveGroup1 = helper->InstallUeDevice (inactiveNodes1);
+  // NetDeviceContainer ueNetDevInactiveGroup2 = helper->InstallUeDevice (inactiveNodes2);
   
 
   Ptr<mmwave::MmWaveEnbNetDevice> firstEnbDev = DynamicCast<mmwave::MmWaveEnbNetDevice>(mmWaveEnbDevs.Get(0));
@@ -917,8 +923,8 @@ int main (int argc, char *argv[])
   helper->RegisterMillicarDevicesToEnb(ueNetDevGroup5, firstEnbDev);
   helper->RegisterMillicarDevicesToEnb(ueNetDevGroup6, firstEnbDev);
   helper->RegisterMillicarDevicesToEnb(ueNetDevGroup7, firstEnbDev);
-  helper->RegisterMillicarDevicesToEnb(ueNetDevInactiveGroup1, firstEnbDev);
-  helper->RegisterMillicarDevicesToEnb(ueNetDevInactiveGroup2, firstEnbDev);
+  // helper->RegisterMillicarDevicesToEnb(ueNetDevInactiveGroup1, firstEnbDev);
+  // helper->RegisterMillicarDevicesToEnb(ueNetDevInactiveGroup2, firstEnbDev);
 
   // test message creation
   // firstEnbDev->TestMessageCreation();
@@ -935,8 +941,8 @@ int main (int argc, char *argv[])
   internet.Install (ueNodesGroup5);
   internet.Install (ueNodesGroup6);
   internet.Install (ueNodesGroup7);
-  internet.Install (inactiveNodes1);
-  internet.Install (inactiveNodes2);
+  // internet.Install (inactiveNodes1);
+  // internet.Install (inactiveNodes2);
 
   Ipv4AddressHelper ipv4;
 
@@ -988,8 +994,8 @@ int main (int argc, char *argv[])
   Ipv4InterfaceContainer ueNodesGroup5Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup5);
   Ipv4InterfaceContainer ueNodesGroup6Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup6);
   Ipv4InterfaceContainer ueNodesGroup7Ipv4InterfaceContainer = ipv4.Assign (ueNetDevGroup7);
-  Ipv4InterfaceContainer ueNodesInactiveGroup1Ipv4InterfaceContainer = ipv4.Assign (ueNetDevInactiveGroup1);
-  Ipv4InterfaceContainer ueNodesInactiveGroup2Ipv4InterfaceContainer = ipv4.Assign (ueNetDevInactiveGroup2);
+  // Ipv4InterfaceContainer ueNodesInactiveGroup1Ipv4InterfaceContainer = ipv4.Assign (ueNetDevInactiveGroup1);
+  // Ipv4InterfaceContainer ueNodesInactiveGroup2Ipv4InterfaceContainer = ipv4.Assign (ueNetDevInactiveGroup2);
 
   // Need to pair the devices in order to create a correspondence between transmitter and receiver
   // and to populate the < IP addr, RNTI > map.
@@ -1002,8 +1008,8 @@ int main (int argc, char *argv[])
   helper->PairDevicesMillicar(ueNetDevGroup5);
   helper->PairDevicesMillicar(ueNetDevGroup6);
   helper->PairDevicesMillicar(ueNetDevGroup7);
-  helper->PairDevicesMillicar(ueNetDevInactiveGroup1);
-  helper->PairDevicesMillicar(ueNetDevInactiveGroup2);
+  // helper->PairDevicesMillicar(ueNetDevInactiveGroup1);
+  // helper->PairDevicesMillicar(ueNetDevInactiveGroup2);
 
   // Set the routing table
 //   Ipv4StaticRoutingHelper ipv4RoutingHelper;
@@ -1036,8 +1042,8 @@ int main (int argc, char *argv[])
   helper->AttachToClosestEnb(ueNetDevGroup5, allNetDevs);
   helper->AttachToClosestEnb(ueNetDevGroup6, allNetDevs);
   helper->AttachToClosestEnb(ueNetDevGroup7, allNetDevs);
-  helper->AttachToClosestEnb(ueNetDevInactiveGroup1, allNetDevs);
-  helper->AttachToClosestEnb(ueNetDevInactiveGroup2, allNetDevs);
+  // helper->AttachToClosestEnb(ueNetDevInactiveGroup1, allNetDevs);
+  // helper->AttachToClosestEnb(ueNetDevInactiveGroup2, allNetDevs);
 
   // create the applications
   uint32_t port = 4000;
@@ -1628,6 +1634,8 @@ int main (int argc, char *argv[])
     
     ueMac->TraceConnectWithoutContext("DecentralizedRelaySnr",
                         MakeBoundCallback(&EfStatsHelper::DecentralizedRelayReportCallback, &decentralizedRelayStats ));
+    ueMac->TraceConnectWithoutContext("RelayPacketLatency",
+                        MakeBoundCallback(&EfStatsHelper::PacketRelayLatencyReportCallback, &relayLatencyStats ));
     
     
     Ptr<mmwave::MmWaveMillicarUeNetDevice> ueDev = DynamicCast<mmwave::MmWaveMillicarUeNetDevice>(*ueDeviceIt);
@@ -1703,7 +1711,10 @@ int main (int argc, char *argv[])
   relayPacketStats.EmptyCache();
   allPairssinrReportStats.EmptyCache();
   sinrReportStats.EmptyCache();
+  dlSchedulingStats.EmptyCache();
   decentralizedRelayStats.EmptyCache();
+  decentralizedRelayStats.EmptyCache();
+  relayLatencyStats.EmptyCache();
 
   std::cout << "----------- Statistics -----------" << std::endl;
   std::cout << "Packets size:\t\t" << packetSize << " Bytes" << std::endl;

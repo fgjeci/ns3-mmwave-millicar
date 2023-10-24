@@ -781,6 +781,13 @@ MmWaveSidelinkPhy::UpdateUePeerSinrEstimate(){
       
       double sinrAvg_no_int = Sum(sinr) / (sinr.GetSpectrumModel()->GetNumBands());
       double sinrAvg_int = Sum(sinr_int) / (sinr_int.GetSpectrumModel()->GetNumBands());
+      if (isnan(sinrAvg_no_int)){
+        sinrAvg_no_int = 0;
+      }
+      if (isnan(sinrAvg_int)){
+        sinrAvg_int = 0;
+      }
+      
       // NS_LOG_UNCOND("Snr " << sinrAvg_no_int << " sinr " << sinrAvg_int);
       double sinrAvg = 0;
       if (m_snrReport){
@@ -944,7 +951,7 @@ MmWaveSidelinkPhy::UpdateUePeerSinrEstimate(){
       //     m_sinrMillicarPairDevicesMap[ue->first] = sinrAvg;
       // }
       // modified
-      
+      // std::cout << " sinr avg " << sinrAvg_int << " no int " << sinrAvg_no_int << std::endl;
       m_sinrMillicarPairDevicesMap[ue->first].snr = sinrAvg_no_int;
       m_sinrMillicarPairDevicesMap[ue->first].sinr = sinrAvg_int;
       // end modificaiton

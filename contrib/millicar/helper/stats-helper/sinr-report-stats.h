@@ -108,8 +108,8 @@ private:
     uint16_t rnti;
     uint8_t numSym;
     uint32_t tbSize;
-    double sinr;
-    double snr;
+    double sinr{0};
+    double snr{0};
   };
 
   SQLiteOutput *m_db;                         //!< DB pointer
