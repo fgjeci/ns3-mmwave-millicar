@@ -127,6 +127,7 @@ void PrintGnuplottableNodeListToFile (std::string filename);
 void PrintGnuplottableUeListToFile(std::string filename);
 void PrintGnuplottableEnbListToFile(std::string filename);
 void PrintGnuplottableBuildingListToFile(std::string filename);
+void CreateRicControlFile(std::string filename);
 
 uint32_t g_rxPackets; // total number of received packets
 uint32_t g_txPackets; // total number of transmitted packets
@@ -297,6 +298,7 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::TracesPath", StringValue (tracesPath));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::TracesPath", StringValue (tracesPath));
   Config::SetDefault ("ns3::MmWaveVehicularTracesHelper::TracesPath", StringValue (tracesPath));
+  Config::SetDefault ("ns3::MmWaveSidelinkMac::TracesPath", StringValue (tracesPath));
 
   SQLiteOutput db(tracesPath+ "traces.db");
   mmwave::SinrReportStats sinrReportStats;
@@ -1660,6 +1662,7 @@ int main (int argc, char *argv[])
   PrintGnuplottableBuildingListToFile(tracesPath+"buildings.txt");
   PrintGnuplottableUeListToFile(tracesPath+"ues.txt");
   PrintGnuplottableEnbListToFile(tracesPath+"enbs.txt");
+  CreateRicControlFile(tracesPath + "ric-control-messages.txt");
   // Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
   // lteHelper->Initialize ();
   // lteHelper->EnablePhyTraces ();
@@ -1871,3 +1874,13 @@ PrintGnuplottableBuildingListToFile(std::string filename)
                 << box.xMax << "," << box.yMax << " front fs empty " << std::endl;
     }
 }
+
+
+void 
+CreateRicControlFile(std::string filename){
+  std::ofstream csv {};
+  csv.open (filename.c_str ());
+  csv << "timestamp,sourceRnti,destinationRnti,intermediateRnti\n";
+  csv.close();
+}
+

@@ -265,6 +265,7 @@ private:
   TracedCallback<Ptr<Packet>, uint16_t, uint16_t, uint16_t, uint8_t> m_relayLatency;
 
   std::map<uint8_t, uint16_t> m_relayLcidRntiMap;
+  std::string m_tracesPath;
 
   uint32_t m_frame {0}; //!< frame number
   uint8_t m_subframe {0}; //!< subframe number

@@ -144,6 +144,11 @@ MmWaveSidelinkMac::GetTypeId (void)
                   BooleanValue (false),
                   MakeBooleanAccessor(&MmWaveSidelinkMac::m_hasDecentralizedRelay),
                   MakeBooleanChecker ())
+    .AddAttribute ("TracesPath",
+                  "The path where to store the path. ",
+                  StringValue ("./"),
+                  MakeStringAccessor (&MmWaveSidelinkMac::m_tracesPath),
+                  MakeStringChecker ())
     
 ;
   return tid;
@@ -329,6 +334,23 @@ MmWaveSidelinkMac::UpdateDecentralizedRelayPath(mmwave::SfnSf timingInfo, uint16
   // local rnti, dest rnti, intermediate rnti, direct snr, best snr
   // double directLinkSnr =  m_phySapProvider->GetDirectLinkSignalStrength(rntiDest);
   m_decentralizedRelaySnrTrace(timingInfo, GetRnti(), rntiDest, (uint16_t)_pair.first, directLinkSnr, _pair.second);
+
+  // storing the info in ric control command file
+  std::ofstream csv {};
+  std::string m_ricControlReceivedFilename = m_tracesPath + "ric-control-messages.txt";
+  csv.open (m_ricControlReceivedFilename.c_str (),  std::ios_base::app);
+  if (!csv.is_open ())
+  {
+    NS_FATAL_ERROR ("Can't open file " << m_ricControlReceivedFilename.c_str ());
+  }
+
+  std::string to_print = std::to_string(Simulator::Now().GetSeconds ()) + "," +
+                                    std::to_string(GetRnti()) + "," +
+                                    std::to_string(rntiDest) + "," +
+                                    std::to_string(_pair.first) + "\n";
+  csv << to_print;
+  
+  csv.close();
 }
 
 void 
