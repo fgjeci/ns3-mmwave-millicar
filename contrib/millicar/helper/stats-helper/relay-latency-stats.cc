@@ -105,7 +105,7 @@ RelayLatencyStats::SaveRelayLatency (uint16_t sourceRnti, //uint16_t intermediat
 	m_relayLatencyCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_relayLatencyCache.size () * sizeof (RelayLatencyCache) > 1000)
+  if (m_relayLatencyCache.size () * sizeof (RelayLatencyCache) > 100000)
     {
       WriteCache ();
     }

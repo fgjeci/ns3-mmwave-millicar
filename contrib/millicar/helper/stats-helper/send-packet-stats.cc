@@ -136,7 +136,7 @@ SendPacketStats::SavePacketRelay (uint16_t sourceRnti, uint16_t intermediateRnti
 	m_sendPacketCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 1000000)
+  if (m_sendPacketCache.size () * sizeof (SendPacketCache) > 100000)
     {
       WriteCache ();
     }

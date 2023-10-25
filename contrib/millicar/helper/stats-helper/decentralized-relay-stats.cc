@@ -82,7 +82,7 @@ DecentralizedRelayStats::SaveDecentralizedRelayReport (uint16_t frame, uint8_t s
 	m_decentralizedRelayCache.emplace_back (c);
 
   // Let's wait until ~1MB of entries before storing it in the database
-  if (m_decentralizedRelayCache.size () * sizeof (DecentralizedRelayCache) > 10)
+  if (m_decentralizedRelayCache.size () * sizeof (DecentralizedRelayCache) > 100000)
     {
       WriteCache ();
     }
