@@ -409,7 +409,7 @@ void
 MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uint64_t destRnti, double avgSnr, double avgSinr) // , double positionX, double positionY
 {
   // NS_LOG_FUNCTION(this);
-  if (std::isnan(std::abs(avgSinr)) ){
+  if (std::isnan(std::abs(avgSnr)) ){
     return;
   }
 
@@ -427,8 +427,8 @@ MmWaveEnbNetDevice::RegisterPeerDevicesSinrReportReading(uint16_t localRnti, uin
     m_pairsSinrMillicarMap[localRnti][destRnti].sinr = avgSinr;
     m_pairsSinrMillicarMap[localRnti][destRnti].snr = avgSnr;
   }else{
-    m_pairsSinrMillicarMap[localRnti][destRnti].sinr = m_pairsSinrMillicarMap[localRnti][destRnti].sinr* \
-  _ratio_num_samples + avgSinr/(m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+1);
+  //   m_pairsSinrMillicarMap[localRnti][destRnti].sinr = m_pairsSinrMillicarMap[localRnti][destRnti].sinr* \
+  // _ratio_num_samples + avgSinr/(m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+1);
 
   m_pairsSinrMillicarMap[localRnti][destRnti].snr = m_pairsSinrMillicarMap[localRnti][destRnti].snr* \
   _ratio_num_samples + avgSnr/(m_pairsSinrMillicarMap[localRnti][destRnti].number_of_samples+1);
@@ -1254,10 +1254,10 @@ MmWaveEnbNetDevice::BuildMillicarReportRicIndicationMessageCucp(std::string plmI
         {
           if (!indicationMessageHelper->IsOffline ())
           {
-            if (!std::isnan(it->first.sinr)){
-              double sinrPeer = 10 * std::log10 (it->first.sinr); // we do it to scale the measured data
+            if (!std::isnan(it->first.snr)){
+              double sinrPeer = 10 * std::log10 (it->first.snr); // we do it to scale the measured data
               double convertedSinrPeer = L3RrcMeasurements::ThreeGppMapSinr (sinrPeer);
-              NS_LOG_DEBUG("Rnti " << it->second << " sinr real " << it->first.sinr
+              NS_LOG_DEBUG("Rnti " << it->second << " sinr real " << it->first.snr
                             << " sinr peer " << sinrPeer 
                             << " converted sinr " << convertedSinrPeer 
                             << " & mcs " << +it->first.mcs);

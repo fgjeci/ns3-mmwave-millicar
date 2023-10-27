@@ -73,8 +73,17 @@ SinrReportStats::SaveSinr (uint16_t sourceRnti, uint16_t rnti, uint8_t numSym, u
 	c.sourceRnti = sourceRnti;
 	c.rnti = rnti;
 	c.numSym = numSym;
-	c.sinr = sinr;
-  c.snr = snr;
+  if (std::isnan(std::abs(sinr)) ){
+    c.sinr =0;
+  }else{
+    c.sinr = sinr;
+  }
+  if (std::isnan(std::abs(snr)) ){
+    c.snr =0;
+  }else{
+    c.snr = snr;
+  }
+  // c.snr = snr;
 	c.tbSize = tbSize;
 
 	m_sinrCache.emplace_back (c);
