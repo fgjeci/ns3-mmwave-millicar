@@ -317,7 +317,7 @@ MmWaveSidelinkMac::AddRelayPath(uint16_t localRnti, uint16_t destRnti, uint16_t 
 }
 
 void 
-MmWaveSidelinkMac::UpdateDecentralizedRelayPath(mmwave::SfnSf timingInfo, uint16_t rntiDest, double directLinkSnr){
+MmWaveSidelinkMac::UpdateDecentralizedRelayPath(mmwave::SfnSf timingInfo, uint16_t rntiDest, double directLinkSnrdb){
   // NS_LOG_FUNCTION (this);
   // std::pair<const uint64_t, double> _pair = GetBestRelayNeighbor();
   std::pair<const uint64_t, double> _pair = m_phySapProvider->GetBestRelayNeighbor();
@@ -332,8 +332,7 @@ MmWaveSidelinkMac::UpdateDecentralizedRelayPath(mmwave::SfnSf timingInfo, uint16
   }
   // create a trace to track the activation of relay
   // local rnti, dest rnti, intermediate rnti, direct snr, best snr
-  // double directLinkSnr =  m_phySapProvider->GetDirectLinkSignalStrength(rntiDest);
-  m_decentralizedRelaySnrTrace(timingInfo, GetRnti(), rntiDest, (uint16_t)_pair.first, directLinkSnr, _pair.second);
+  m_decentralizedRelaySnrTrace(timingInfo, GetRnti(), rntiDest, (uint16_t)_pair.first, directLinkSnrdb, _pair.second);
 
   // storing the info in ric control command file
   std::ofstream csv {};
@@ -368,10 +367,11 @@ MmWaveSidelinkMac::UpdateDecentralizedAllRelayPaths(mmwave::SfnSf timingInfo){
     uint16_t rntiDest = bsrIt->second.rnti;
     // local rnti, dest rnti, intermediate rnti = 0, direct snr = 0, best snr
     double directLinkSnr =  m_phySapProvider->GetDirectLinkSignalStrength(rntiDest);
+    double directLinkSnrdb = 10 * std::log10 (directLinkSnr);
     // check if a relay is needed for this destination rnti
     // NS_LOG_DEBUG("Direct link snr " << directLinkSnr);
-    if (directLinkSnr<=m_decentralizedRelaySnr){
-      UpdateDecentralizedRelayPath(timingInfo, rntiDest, directLinkSnr);
+    if (directLinkSnrdb<=m_decentralizedRelaySnr){
+      UpdateDecentralizedRelayPath(timingInfo, rntiDest, directLinkSnrdb);
     }else{
       // mean we do not need a relay, thus we go to the main path
       // find if there exist an entry in the relay path
@@ -389,7 +389,7 @@ MmWaveSidelinkMac::UpdateDecentralizedAllRelayPaths(mmwave::SfnSf timingInfo){
       // Remove relay path in the device
       device->DecentralizedRemoveRelayPath(GetRnti(), rntiDest);
       // add the entry in the trace: 
-      m_decentralizedRelaySnrTrace(timingInfo, GetRnti(), rntiDest, UINT16_MAX, directLinkSnr, 0);
+      m_decentralizedRelaySnrTrace(timingInfo, GetRnti(), rntiDest, UINT16_MAX, directLinkSnrdb, 0);
     }
   }
 }

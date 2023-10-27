@@ -1048,7 +1048,7 @@ void
 MmWaveSidelinkPhy::UpdateDecentralizedRelayPath(uint16_t rnti){
   NS_LOG_FUNCTION (this);
   std::pair<const uint64_t, double> _pair = DoGetBestRelayNeighbor();
-  m_relayPaths[GetRnti()][rnti] = _pair.second;
+  m_relayPaths[GetRnti()][rnti] = _pair.first;
 }
 
 void 
