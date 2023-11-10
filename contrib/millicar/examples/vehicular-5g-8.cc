@@ -269,7 +269,7 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::PlmnId", StringValue (ltePlmnId));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::E2LocalPort", UintegerValue (e2startingPort));
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::E2Periodicity", DoubleValue (0.01));
-  Config::SetDefault ("ns3::MmWaveSidelinkMac::DecentralizedRelaySnrdB", DoubleValue (decentralizedRelaySnr));
+  Config::SetDefault ("ns3::MmWaveSidelinkMac::DecentralizedRelaySnrdB", DoubleValue (decentralizedRelaySnr)); 
   
 
   if (tracesPath.find("/", 0) == std::string::npos){
