@@ -84,8 +84,8 @@ public:
    * \param [in] bwpId BWP ID
    * \param [in] cellId Cell ID
    */
-  void SaveDlSchedulingStats (uint16_t frame, uint8_t subframe, 
-                                      uint8_t slot, uint16_t rnti, 
+  void SaveDlSchedulingStats (uint16_t destRnti, uint16_t frame, uint8_t subframe, 
+                                      uint8_t slot, uint16_t txRnti, 
                                       uint8_t symStart, uint8_t numSym,
                                       uint8_t mcs, uint16_t tbSize);
 
@@ -105,7 +105,8 @@ private:
     uint32_t frame;
     uint8_t subframe;
     uint8_t slot;
-    uint16_t rnti;
+    uint16_t destRnti;
+    uint16_t txRnti;
     uint8_t symStart;
     uint8_t numSym;
     uint8_t mcs;

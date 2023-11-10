@@ -270,7 +270,7 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::E2Periodicity", DoubleValue (0.01));
   Config::SetDefault ("ns3::MmWaveSidelinkPhy::TxPower", DoubleValue (txpower));
   Config::SetDefault ("ns3::MmWaveSidelinkMac::HasDecentralizedRelay", BooleanValue (isDecentralizedRelay));
-  Config::SetDefault ("ns3::MmWaveSidelinkMac::DecentralizedRelaySnr", DoubleValue (decentralizedRelaySnr));
+  Config::SetDefault ("ns3::MmWaveSidelinkMac::DecentralizedRelaySnrdB", DoubleValue (decentralizedRelaySnr));
   
 
   if (tracesPath.find("/", 0) == std::string::npos){

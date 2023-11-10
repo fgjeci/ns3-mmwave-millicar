@@ -47,7 +47,8 @@ DlSchedulingStats::SetDb (SQLiteOutput *db, const std::string & tableName)
                         "(Frame INTEGER NOT NULL,"
                         "SubFrame INTEGER NOT NULL,"
                         "Slot INTEGER NOT NULL,"
-                        "Rnti INTEGER NOT NULL,"
+                        "SourceRnti INTEGER NOT NULL,"
+                        "DestRnti INTEGER NOT NULL,"
                         "SymStart INTEGER NOT NULL,"
                         "NumSym INTEGER NOT NULL,"
                         "mcs INTEGER NOT NULL,"
@@ -65,8 +66,8 @@ DlSchedulingStats::SetDb (SQLiteOutput *db, const std::string & tableName)
 }
 
 void
-DlSchedulingStats::SaveDlSchedulingStats (uint16_t frame, uint8_t subframe, 
-                                      uint8_t slot, uint16_t rnti, 
+DlSchedulingStats::SaveDlSchedulingStats (uint16_t destRnti, uint16_t frame, uint8_t subframe, 
+                                      uint8_t slot, uint16_t txRnti, 
                                       uint8_t symStart, uint8_t numSym,
                                       uint8_t mcs, uint16_t tbSize)
 {
@@ -75,7 +76,8 @@ DlSchedulingStats::SaveDlSchedulingStats (uint16_t frame, uint8_t subframe,
   c.frame = frame;
   c.subframe = subframe;
   c.slot = slot;
-  c.rnti = rnti;
+  c.txRnti = txRnti;
+  c.destRnti = destRnti;
   c.symStart = symStart;
   c.numSym = numSym;
   c.mcs=mcs;
@@ -118,7 +120,7 @@ void DlSchedulingStats::WriteCache ()
   for (const auto & v : m_dlSchedulingCache)
     {
       sqlite3_stmt *stmt;
-      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?);");
+      ret = m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 1, static_cast<uint32_t> (v.frame));
       NS_ASSERT (ret);
@@ -126,24 +128,26 @@ void DlSchedulingStats::WriteCache ()
       NS_ASSERT (ret);
       ret = m_db->Bind (stmt, 3, static_cast<uint32_t> (v.slot));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 4, v.rnti);
+      ret = m_db->Bind (stmt, 4, v.txRnti);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 5, static_cast<uint32_t> (v.symStart));
+      ret = m_db->Bind (stmt, 5, v.destRnti);
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 6, static_cast<uint32_t> (v.numSym));
+      ret = m_db->Bind (stmt, 6, static_cast<uint32_t> (v.symStart));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 7, static_cast<uint32_t> (v.mcs));
+      ret = m_db->Bind (stmt, 7, static_cast<uint32_t> (v.numSym));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 8, static_cast<uint32_t> (v.tbSize));
+      ret = m_db->Bind (stmt, 8, static_cast<uint32_t> (v.mcs));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 9, RngSeedManager::GetSeed ());
+      ret = m_db->Bind (stmt, 9, static_cast<uint32_t> (v.tbSize));
       NS_ASSERT (ret);
-      ret = m_db->Bind (stmt, 10, static_cast<uint32_t> (RngSeedManager::GetRun ()));
+      ret = m_db->Bind (stmt, 10, RngSeedManager::GetSeed ());
+      NS_ASSERT (ret);
+      ret = m_db->Bind (stmt, 11, static_cast<uint32_t> (RngSeedManager::GetRun ()));
       NS_ASSERT (ret);
       // ret = m_db->Bind (stmt, 10, static_cast<uint32_t> (MpiInterface::GetSystemId ()));
       // NS_ASSERT (ret);
       // insert the timestamp
-      ret = m_db->Bind (stmt, 11, v.timeInstance.GetSeconds());
+      ret = m_db->Bind (stmt, 12, v.timeInstance.GetSeconds());
       NS_ASSERT (ret);
       ret = m_db->SpinExec (stmt);
       NS_ASSERT (ret);

@@ -75,7 +75,7 @@ public:
 	ReportMacBsr(mmwave::MacBsrStats *macSRStats, mmwave::SfnSf sfnsf, uint16_t cellId, mmwave::MmWaveMacSchedSapProvider::SchedDlRlcBufferReqParameters schedParams);
 
 	static void
-	ReportSchedulingInfo(mmwave::DlSchedulingStats *enbStats, millicar::SlSchedulingCallback schedParams);
+	ReportSchedulingInfo(mmwave::DlSchedulingStats *enbStats, uint16_t destRnti, millicar::SlSchedulingCallback schedParams);
 
 	static void
 	DecentralizedRelayReportCallback(mmwave::DecentralizedRelayStats *relayStats, mmwave::SfnSf sfnsf, uint16_t rnti, uint16_t destRnti, 

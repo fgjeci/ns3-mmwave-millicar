@@ -212,6 +212,7 @@ private:
   * \returns SlotAllocInfo object containing the scheduling information
   */
   mmwave::SlotAllocInfo ScheduleResources (mmwave::SfnSf timingInfo);
+  mmwave::SlotAllocInfo ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t regTrafficUsedSym, uint8_t firstSymStartAvailable);
 
   /**
   * \brief Updates the BSR corresponding to the specified LC by subtracting the
@@ -221,6 +222,11 @@ private:
   * \returns updated iterator to the Buffer Status Report map
   */
   std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters>::iterator UpdateBufferStatusReport (uint8_t lcid, uint32_t assignedBytes);
+  std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters>::iterator UpdateRelayBufferStatusReport (uint8_t lcid, uint32_t assignedBytes);
+  std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters>::iterator UpdateRelayUserBufferStatusReport (uint8_t lcid, uint32_t assignedBytes);
+  
+
+
 
   MmWaveSidelinkPhySapUser* m_phySapUser; //!< Sidelink PHY SAP user
   MmWaveSidelinkPhySapProvider* m_phySapProvider; //!< Sidelink PHY SAP provider
@@ -233,9 +239,11 @@ private:
   uint16_t m_rnti; //!< radio network temporary identifier
   std::vector<uint16_t> m_sfAllocInfo; //!< defines the subframe allocation, m_sfAllocInfo[i] = RNTI of the device scheduled for slot i
   std::map<uint16_t, std::list<LteMacSapProvider::TransmitPduParameters>> m_txBufferMap; //!< map containing the <RNTI, tx buffer> pairs
+  std::map<uint16_t, std::list<LteMacSapProvider::TransmitPduParameters>> m_txBufferMapRelay; //!< map containing the <RNTI, tx buffer> pairs
   std::map<uint16_t, std::vector<int>> m_slCqiReported; //!< map containing the <RNTI, CQI> pairs
   Callback<void, Ptr<Packet> > m_forwardUpCallback; //!< upward callback to the NetDevice
   std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters> m_bufferStatusReportMap; //!< map containing the <LCID, buffer status in bits> pairs
+  std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters> m_bufferStatusReportMapRelay; //!< map containing the <LCID, buffer status in bits> pairs
 
   // map to be used when relay functionality is implemented
   std::map<uint16_t, std::map<uint16_t, uint16_t>> m_relayPaths;
@@ -251,7 +259,7 @@ private:
   // end modification
 
   // trace sources
-  TracedCallback<SlSchedulingCallback> m_schedulingTrace; //!< trace source returning information regarding the scheduling
+  TracedCallback<uint16_t, SlSchedulingCallback> m_schedulingTrace; //!< trace source returning information regarding the scheduling
 
   Ptr<NetDevice> m_netDevice;
 
@@ -266,6 +274,8 @@ private:
 
   std::map<uint8_t, uint16_t> m_relayLcidRntiMap;
   std::string m_tracesPath;
+
+  std::map<uint16_t, double> m_rntiSinrActiveLinks;
 
   uint32_t m_frame {0}; //!< frame number
   uint8_t m_subframe {0}; //!< subframe number

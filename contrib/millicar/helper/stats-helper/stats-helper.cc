@@ -195,9 +195,9 @@ EfStatsHelper::ReportMacBsr(mmwave::MacBsrStats *macBsrStats, mmwave::SfnSf sfnS
 }
 
 void
-EfStatsHelper::ReportSchedulingInfo(mmwave::DlSchedulingStats *enbStats, millicar::SlSchedulingCallback schedParams){
+EfStatsHelper::ReportSchedulingInfo(mmwave::DlSchedulingStats *enbStats, uint16_t destRnti, millicar::SlSchedulingCallback schedParams){
   // std::cout << "Report " << std::endl;
-  enbStats->SaveDlSchedulingStats(schedParams.frame, schedParams.subframe, schedParams.slotNum,
+  enbStats->SaveDlSchedulingStats(destRnti, schedParams.frame, schedParams.subframe, schedParams.slotNum,
         schedParams.txRnti, schedParams.symStart, schedParams.numSym,
         schedParams.mcs, schedParams.tbSize);
 }
