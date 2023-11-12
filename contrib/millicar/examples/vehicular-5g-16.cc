@@ -1074,8 +1074,9 @@ int main (int argc, char *argv[])
   ApplicationContainer bulkApps, updApps;
   uint32_t trafficGeneratingNodes = 2;
   uint32_t serverPacketSize = 512;
-  uint32_t fullBufferFlowInterval = 100;
-  uint32_t otherFlowPacketInterval = 3000;
+  // uint32_t fullBufferFlowInterval = 100;
+  uint32_t fullBufferFlowInterval = 1000;
+  uint32_t otherFlowPacketInterval = 3000; // 3000
 
   for (uint32_t _ind = 0; _ind < ueNodes.GetN(); ++_ind){
   // for (int _ind = 0; _ind < 1; ++_ind){

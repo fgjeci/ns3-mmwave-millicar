@@ -269,6 +269,7 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::PlmnId", StringValue (ltePlmnId));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::E2LocalPort", UintegerValue (e2startingPort));
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::E2Periodicity", DoubleValue (0.01));
+  Config::SetDefault ("ns3::MmWaveSidelinkMac::HasDecentralizedRelay", BooleanValue (isDecentralizedRelay));
   Config::SetDefault ("ns3::MmWaveSidelinkMac::DecentralizedRelaySnrdB", DoubleValue (decentralizedRelaySnr)); 
   
 
@@ -1072,7 +1073,7 @@ int main (int argc, char *argv[])
   ApplicationContainer bulkApps, updApps;
   uint32_t trafficGeneratingNodes = 2;
   uint32_t serverPacketSize = 512;
-  uint32_t fullBufferFlowInterval = 100;
+  uint32_t fullBufferFlowInterval = 1000; // 100
   uint32_t otherFlowPacketInterval = 3000;
 
   for (uint32_t _ind = 0; _ind < ueNodes.GetN(); ++_ind){

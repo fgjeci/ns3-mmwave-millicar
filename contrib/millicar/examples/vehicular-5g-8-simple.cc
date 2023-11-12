@@ -635,7 +635,7 @@ int main (int argc, char *argv[])
   ApplicationContainer bulkApps, updApps;
   uint32_t trafficGeneratingNodes = 2;
   uint32_t serverPacketSize = 512;
-  uint32_t fullBufferFlowInterval = 100;
+  uint32_t fullBufferFlowInterval = 1000;//100
   uint32_t otherFlowPacketInterval = 3000;
 
   for (uint32_t _ind = 0; _ind < ueNodes.GetN(); ++_ind){
@@ -739,15 +739,15 @@ int main (int argc, char *argv[])
     // through this relay all traffic between 1-5 should pass through 6
     // NS_LOG_DEBUG("Setting test relay");
     // if (relayTime>0){
-      NS_LOG_DEBUG("Schedule relay at time " << 0.38 << " seconds");
-      Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
-                                              ueDev, 1, 5, 4);
-      Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
-                                              ueDev, 2, 6, 4);
-      Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
-                                              ueDev, 9, 13, 11);
-      Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
-                                              ueDev, 10, 14, 12);
+      // NS_LOG_DEBUG("Schedule relay at time " << 0.38 << " seconds");
+      // Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
+      //                                         ueDev, 1, 5, 4);
+      // Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
+      //                                         ueDev, 2, 6, 4);
+      // Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
+      //                                         ueDev, 9, 13, 11);
+      // Simulator::Schedule (Seconds (0.001), &mmwave::MmWaveMillicarUeNetDevice::TestRelay,
+      //                                         ueDev, 10, 14, 12);
     // }
     
   }
