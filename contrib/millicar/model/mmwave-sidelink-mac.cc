@@ -39,6 +39,7 @@ while (false);
 #include <ns3/node.h>
 #include "mmwave-packet-relay-tag.h"
 #include "mmwave-vehicular-5g-net-device.h"
+#include <set>
 
 namespace ns3 {
 
@@ -198,11 +199,11 @@ MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
   m_subframe = timingInfo.m_sfNum;
   m_slotNum = timingInfo.m_slotNum;
 
-  NS_LOG_UNCOND("Slot indication " << m_rnti);
+  // NS_LOG_DEBUG("Slot indication " << m_rnti);
 
   // modified
-  m_relayPaths[9][13]=14;
-  m_relayPaths[1][5]=6;
+  // m_relayPaths[9][13]=14;
+  // m_relayPaths[1][5]=6;
   // end modification
 
   NS_ASSERT_MSG (m_rnti != 0, "First set the RNTI");
@@ -320,6 +321,10 @@ MmWaveSidelinkMac::DoSlotIndication (mmwave::SfnSf timingInfo)
         // discard the tranmission opportunity and go to the next transmission
         continue;
       }
+
+      // NS_LOG_UNCOND("Tx buffer search " << it->m_rnti 
+      //               << " p " << (txBuffer == m_txBufferMapRelay.end ())
+      //               << " buffer empty " << txBuffer->second.empty ());
 
       // modified
       // NS_LOG_DEBUG("Peekeing the packet tag");
@@ -473,10 +478,11 @@ MmWaveSidelinkMac::UpdateDecentralizedAllRelayPaths(mmwave::SfnSf timingInfo){
 mmwave::SlotAllocInfo
 MmWaveSidelinkMac::ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t regTrafficUsedSym, uint8_t firstSymStartAvailable)
 {
-  NS_LOG_UNCOND("Schedule relay " << m_rnti << timingInfo.m_frameNum);
+  // NS_LOG_UNCOND("Schedule relay " << m_rnti << " " << timingInfo.m_frameNum);
   mmwave::SlotAllocInfo allocationInfo; // stores all the allocation decisions
   allocationInfo.m_sfnSf = timingInfo;
   allocationInfo.m_numSymAlloc = 0;
+  // std::set<uint8_t> consideredLcids; 
 
   if (m_bufferStatusReportMapRelay.size () == 0)
   {
@@ -486,14 +492,15 @@ MmWaveSidelinkMac::ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t re
   // compute the total number of available symbols
   uint32_t availableSymbols = m_phyMacConfig->GetSymbPerSlot () - regTrafficUsedSym;
 
-  NS_LOG_UNCOND("Available symbols " << availableSymbols);
-
   NS_ASSERT_MSG (regTrafficUsedSym <= m_phyMacConfig->GetSymbPerSlot (), "More symbols assigned than available");
 
   // distribute the symbols among different relay equally
   uint32_t availableSymbolsPerLc = availableSymbols / m_bufferStatusReportMapRelay.size ();
 
-  NS_LOG_UNCOND("Available symbols per lc " << availableSymbolsPerLc);
+  NS_LOG_UNCOND( " rnti " << m_rnti <<
+                " available symbols " << availableSymbols << 
+                // " per lc " << availableSymbolsPerLc <<
+                " buffer size " << m_bufferStatusReportMapRelay.size ());
 
   // TODO start from the last served lc + 1
   auto bsrIt = m_bufferStatusReportMapRelay.begin ();
@@ -502,6 +509,7 @@ MmWaveSidelinkMac::ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t re
   
   // serve the active logical channels with a Round Robin approach
   while (availableSymbols > 0 && m_bufferStatusReportMapRelay.size () > 0){
+    // consideredLcids.insert(bsrIt->first);
     uint16_t rntiDest = bsrIt->second.rnti; // the RNTI of the destination node
     uint8_t mcs = GetMcs (rntiDest); // select the MCS
 
@@ -515,11 +523,16 @@ MmWaveSidelinkMac::ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t re
     uint32_t remainingSymbolsPerLc = availableSymbolsPerLc;
     bool firstPacketConsidered = false;
 
+    NS_LOG_UNCOND(" rnti " << rntiDest << " mcs " << (uint32_t)mcs << 
+                  " packet sizes " << bsrIt->second.txPacketSizes.size() <<
+                  " total size " << bsrIt->second.txQueueSize
+                  );
+
     // iterate over individual packets
     std::list<uint32_t>::iterator txPacketSizesIt=bsrIt->second.txPacketSizes.begin();
     for(; txPacketSizesIt != bsrIt->second.txPacketSizes.end(); ){ // ++txPacketSizesIt
       
-      NS_LOG_UNCOND("tx packet size  " << (*txPacketSizesIt));
+      NS_LOG_UNCOND(" " << (*txPacketSizesIt));
       // we have to calculate the used symbols per packet size
       // uint32_t requiredBytes = (bsrIt->second.txQueueSize + bsrIt->second.retxQueueSize + bsrIt->second.statusPduSize);
       requiredBytes = (*txPacketSizesIt);
@@ -545,6 +558,7 @@ MmWaveSidelinkMac::ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t re
             // if the packet is big enough, we can take from other's symbols to send the packet
             assignedBytes = requiredBytes;
           }else{
+
             break;
           }
         }else{
@@ -557,6 +571,8 @@ MmWaveSidelinkMac::ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t re
 
       // compute the number of symbols assigned to this LC
       assignedSymbols = m_amc->GetMinNumSymForTbSize (assignedBytes, mcs);
+
+      // NS_LOG_UNCOND("Assigned bytes " << assignedBytes << " assign symbols " << assignedSymbols);
 
       mmwave::TtiAllocInfo info;
       info.m_ttiIdx = timingInfo.m_slotNum; // the TB will be sent in this slot
@@ -609,23 +625,26 @@ MmWaveSidelinkMac::ScheduleRelayResources (mmwave::SfnSf timingInfo, uint32_t re
       // ++txPacketSizesIt;
       // go to next packet in front
       txPacketSizesIt=bsrIt->second.txPacketSizes.begin();
-
     }
-
     bsrIt = UpdateRelayBufferStatusReport (bsrIt->second.lcid, 0);
 
     // if the iterator reached the end of the map, start again
     if (bsrIt == m_bufferStatusReportMapRelay.end ())
     {
-      bsrIt = m_bufferStatusReportMapRelay.begin ();
+      // there is no need to get in the begin, rather we just 
+      // get out of loop by returning the allocations
+      // bsrIt = m_bufferStatusReportMapRelay.begin ();
+      return allocationInfo;
     }
-
+    // find 
   }
+
 }
 
 std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters>::iterator
 MmWaveSidelinkMac::UpdateRelayUserBufferStatusReport (uint8_t lcid, uint32_t assignedBytes){
   // NS_LOG_FUNCTION(this << (uint32_t)lcid);
+  
   // find the corresponding entry in the map
   auto bsrIt = m_bufferStatusReportMapRelay.find (lcid);
 
@@ -642,6 +661,11 @@ MmWaveSidelinkMac::UpdateRelayUserBufferStatusReport (uint8_t lcid, uint32_t ass
     bsrIt->second.txQueueSize = 0;
   }
 
+  NS_LOG_UNCOND("UpdateRelayUser " << (uint32_t)lcid << " bytes " << assignedBytes << 
+                " tx queue " << bsrIt->second.txQueueSize << 
+                " front packet size " << bsrIt->second.txPacketSizes.front()<< 
+                " rnti " << m_rnti);
+
   // remove the packet from list
   bsrIt->second.txPacketSizes.pop_front();
 
@@ -657,7 +681,7 @@ MmWaveSidelinkMac::UpdateRelayBufferStatusReport (uint8_t lcid, uint32_t assigne
   NS_ASSERT_MSG (bsrIt != m_bufferStatusReportMapRelay.end (), "m_bufferStatusReportMapRelay does not contain the required entry");
 
   // delete the entry in the map if no further resources are needed
-  if ( bsrIt->second.txQueueSize == 0)
+  if ( (bsrIt->second.txQueueSize == 0) || (bsrIt->second.txPacketSizes.size() == 0) )
   {
     // erasing also from relay lcid and rnti map
     // NS_LOG_DEBUG("Rem lcid " << (uint32_t)bsrIt->second.lcid 
@@ -666,6 +690,8 @@ MmWaveSidelinkMac::UpdateRelayBufferStatusReport (uint8_t lcid, uint32_t assigne
     if (relayLcidRntiIt != m_relayLcidRntiMap.end()){
       m_relayLcidRntiMap.erase(relayLcidRntiIt);
     }
+
+    NS_LOG_UNCOND("Erasing lcid " << (uint32_t)lcid << " rnti " << m_rnti);
 
     bsrIt = m_bufferStatusReportMapRelay.erase (bsrIt);
   }
@@ -701,6 +727,8 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
   // NOTE the number of available symbols per LC is rounded down due to the cast
   // to int
   uint32_t availableSymbolsPerLc = availableSymbols / m_bufferStatusReportMap.size ();
+
+  uint32_t maxSymbolsRelay = 14;
 
   // NS_LOG_DEBUG("availableSymbolsPerLc =\t" << availableSymbolsPerLc);
 
@@ -739,13 +767,16 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
     // the second condition indicates we have relay traffic, thus we 
     // should use te mcs of the destination, rather that of intermediate node
     uint8_t mcs = 0;
+    bool isRelay = false;
     if ((intermediateDest== UINT16_MAX)  || (m_relayLcidRntiMap.find(bsrIt->second.lcid) == m_relayLcidRntiMap.end())){ //
       // as the original
       mcs = GetMcs (rntiDest); // select the MCS
+      isRelay = true;
       // NS_LOG_DEBUG("rnti " << rntiDest << " mcs = " << uint16_t(mcs));
     }else{
       // we are in a relay path, thus use the intermediate rnti
       mcs = GetMcs (intermediateDest); // select the MCS
+      // mcs = 0;
       // NS_LOG_LOGIC("intermediate rnti " << intermediateDest << " mcs = " << uint16_t(mcs));
     }
     
@@ -753,19 +784,52 @@ MmWaveSidelinkMac::ScheduleResources (mmwave::SfnSf timingInfo)
     // compute the number of bits for this LC
     uint32_t availableBytesPerLc = m_amc->CalculateTbSize(mcs, availableSymbolsPerLc);
 
+    uint32_t maxTxBytesRelay = m_amc->CalculateTbSize(mcs, maxSymbolsRelay);
+
     // compute the number of bits required by this LC
     uint32_t requiredBytes = (bsrIt->second.txQueueSize + bsrIt->second.retxQueueSize + bsrIt->second.statusPduSize);
 
     // assign a number of bits which is less or equal to the available bits
     uint32_t assignedBytes = 0;
+    // original
+    // if (requiredBytes <= availableBytesPerLc)
+    // {
+    //   assignedBytes = requiredBytes;
+    // }
+    // else
+    // {
+    //   assignedBytes = availableBytesPerLc;
+    // }
+    // end original
+    // modified
+    // set a limit for the relay traffic
+    // if (isRelay){
+    //   if (availableBytesPerLc < maxTxBytesRelay){
+
+    //   }
+    // }else{
     if (requiredBytes <= availableBytesPerLc)
     {
-      assignedBytes = requiredBytes;
+      if (availableBytesPerLc <= maxTxBytesRelay){
+        assignedBytes = requiredBytes;
+      }
+      else{
+        assignedBytes = maxTxBytesRelay;
+      }
     }
     else
     {
-      assignedBytes = availableBytesPerLc;
+      if (availableBytesPerLc <= maxTxBytesRelay){
+        assignedBytes = availableBytesPerLc;
+      }else{
+        assignedBytes = maxTxBytesRelay;
+      }
     }
+    // }
+    // end modification
+    
+
+
 
     // compute the number of symbols assigned to this LC
     uint32_t assignedSymbols = m_amc->GetMinNumSymForTbSize (assignedBytes, mcs);
@@ -954,8 +1018,6 @@ MmWaveSidelinkMac::UpdateBufferStatusReport (uint8_t lcid, uint32_t assignedByte
   return bsrIt;
 }
 
-
-
 void
 MmWaveSidelinkMac::DoReportBufferStatus (LteMacSapProvider::ReportBufferStatusParameters params)
 {
@@ -970,7 +1032,7 @@ MmWaveSidelinkMac::DoReportBufferStatus (LteMacSapProvider::ReportBufferStatusPa
   else
   {
     m_bufferStatusReportMap.insert (std::make_pair (params.lcid, params));
-    NS_LOG_DEBUG("Insert buffer status report for LCID " << uint32_t(params.lcid));
+    // NS_LOG_DEBUG("Insert buffer status report for LCID " << uint32_t(params.lcid));
   }
 
   // test e2
@@ -1078,7 +1140,7 @@ MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
   rxPduParams.p = p;
   rxPduParams.rnti = tag.GetRnti ();
   rxPduParams.lcid = tag.GetLcid ();
-  NS_LOG_DEBUG ("Received a packet " << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
+  // NS_LOG_DEBUG ("Received a packet " << rxPduParams.rnti << " " << (uint16_t)rxPduParams.lcid);
   LteMacSapUser* macSapUser = m_lcidToMacSap.find(rxPduParams.lcid)->second;
   // we send the packet to upper layers anyway
   // in case of a relay, it will only store in the traces
@@ -1089,11 +1151,11 @@ MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
 
   // intermediate node
   if (destinationRnti!=GetRnti()){
-    NS_LOG_DEBUG("Relay in inter " << GetRnti() 
-                // << " - " << intermediateRnti 
-                // << " source " << sourceRnti 
-                << " dest " << destinationRnti
-                << " lcid " << (uint32_t)tag.GetLcid());
+    // NS_LOG_DEBUG("Relay in inter " << GetRnti() 
+    //             // << " - " << intermediateRnti 
+    //             // << " source " << sourceRnti 
+    //             << " dest " << destinationRnti
+    //             << " lcid " << (uint32_t)tag.GetLcid());
     
     // Ptr<Packet> packet = p->Copy();
     // MmWaveMacPacketRelayTag packetRelayTag;
@@ -1104,7 +1166,6 @@ MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
     LteMacSapProvider::TransmitPduParameters txPduParams;
     // txPduParams.rnti = tagRelay.GetRnti();
     // add relay tag to the packet
-    // packet tag we add it in DoSlotIndication
     // packet->AddPacketTag(packetRelayTag);
     txPduParams.pdu = packet;
     txPduParams.rnti = destinationRnti;
@@ -1112,6 +1173,7 @@ MmWaveSidelinkMac::DoReceivePhyPdu (Ptr<Packet> p)
     txPduParams.layer = tag.GetLayer();
     // shouldn't change anything, just reput it in the buffer
     // first check if there is an antry with the rnti in the buffer
+    // NS_LOG_UNCOND("Tx buffer rnti " << destinationRnti << " p.size " << packet->GetSize());
     auto it = m_txBufferMapRelay.find (destinationRnti);// the destination RNTI
     if (it == m_txBufferMapRelay.end ())
     {

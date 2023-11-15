@@ -726,8 +726,16 @@ MmWaveSidelinkSpectrumPhy::ConfigureBeamforming (Ptr<NetDevice> dev)
   if (vehicularDevice)
     {
       antenna = vehicularDevice->GetAntennaArray ();
+      // NS_LOG_DEBUG("Device is vehicle " << vehicularDevice->GetPhy()->GetRnti());
     }else{
       antenna = gVehicularDevice->GetAntennaArrayMillicar ();
+      uint16_t thisDeviceRnti;
+      Ptr<MmWaveMillicarUeNetDevice> thisVehicularDevice = DynamicCast<MmWaveMillicarUeNetDevice>(m_device);
+      if(thisVehicularDevice){
+        thisDeviceRnti = thisVehicularDevice->GetMacMillicar()->GetRnti();
+      }
+      NS_LOG_DEBUG("Local rnti " << thisDeviceRnti << " other rnti " <<  gVehicularDevice->GetPhyMillicar()->GetRnti());
+
     }
   m_beamforming->SetBeamformingVectorForDevice (dev, antenna);
 }

@@ -391,15 +391,15 @@ ParametersConfig::EnableTraces()
 	// LogComponentEnable("LteEnbRrc", LOG_LEVEL_ALL);
 	// LogComponentEnable("LteUeRrc", logLevel);
 	// LogComponentEnable ("MmWaveMillicarHelper", LOG_LEVEL_ALL);
-  	LogComponentEnable ("MmWaveMillicarUeNetDevice", LOG_LEVEL_ALL);
-	LogComponentEnable ("MmWaveSidelinkMac", LOG_LEVEL_ALL);
+  	// LogComponentEnable ("MmWaveMillicarUeNetDevice", LOG_LEVEL_ALL);
+	LogComponentEnable ("MmWaveSidelinkMac", LOG_DEBUG);
 	// LogComponentEnable ("MmWaveSidelinkPhy", LOG_LEVEL_ALL);
 	// LogComponentEnable ("MmWaveSidelinkSpectrumPhy", LOG_LEVEL_ALL);
 	LogComponentEnable ("Vehicular5G", LOG_LEVEL_ALL);
 
 	// LogComponentEnableAll (logLevel);
 //   LogComponentEnable ("RicControlMessage", LOG_LEVEL_ALL);
-//   LogComponentEnable ("MmWaveFlexTtiMaxWeightMacScheduler", LOG_LEVEL_ALL);
+//   LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_ALL);
 // 	LogComponentEnable ("MmWaveFlexTtiMaxRateMacScheduler", LOG_LEVEL_ALL);
   
 //   LogComponentEnable ("E2Termination", logLevel);

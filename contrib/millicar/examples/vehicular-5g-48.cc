@@ -220,6 +220,7 @@ int main (int argc, char *argv[])
   double txpower = 10;
   std::string ltePlmnId = "111";
   uint16_t e2startingPort = 38470;
+  uint16_t e2Port = 46422;
   bool isXappEnabled = false;
   bool isDecentralizedRelay = false;
   double decentralizedRelaySnr = 5;
@@ -237,6 +238,8 @@ int main (int argc, char *argv[])
   cmd.AddValue ("transmitPowerdBm", "Transmit power of ues", txpower);
   cmd.AddValue ("ltePlmnId", "Lte plmn id, shall be used to distinguish simulation", ltePlmnId);
   cmd.AddValue ("e2StartingPort", "starting port number for the gnb e2 termination; destination is same", e2startingPort);
+  cmd.AddValue ("e2Port", "e2 port number", e2Port);
+  cmd.AddValue ("e2TermIp", "e2 termination ip", e2TermIp);
   cmd.AddValue ("isXappEnabled", "Define if the simulation has the support of Xapp", isXappEnabled);
   cmd.AddValue ("isDecentralizedRelay", "Define if the simulation has decentralized relay", isDecentralizedRelay);
   cmd.AddValue ("decentralizedRelaySnr", "Define the snr value to trigger decentralized relay", decentralizedRelaySnr);
@@ -265,6 +268,7 @@ int main (int argc, char *argv[])
   // setting plmn id 
   Config::SetDefault ("ns3::MmWaveMillicarHelper::E2TermIp", StringValue (e2TermIp));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::E2LocalPort", UintegerValue (e2startingPort));
+  Config::SetDefault ("ns3::MmWaveMillicarHelper::E2Port", UintegerValue (e2Port));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::PlmnId", StringValue (ltePlmnId));
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::PlmnId", StringValue (ltePlmnId));
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::E2Periodicity", DoubleValue (0.01));
@@ -745,7 +749,7 @@ int main (int argc, char *argv[])
   relayNodeMobility.Install(relayNodes);
 
   // source
-  ueNodes.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (90,90,1.5));
+  ueNodes.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (90,91,1.5));
   ueNodes.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (85,90,1.5));
   ueNodesGroup1.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,80,1.5));
   ueNodesGroup1.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (43,80,1.5));
@@ -757,8 +761,8 @@ int main (int argc, char *argv[])
   ueNodesGroup4.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (45,105,1.5));
   ueNodesGroup5.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,5,1.5));
   ueNodesGroup5.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (45,7,1.5));
-  ueNodesGroup6.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,20,1.5));
-  ueNodesGroup6.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (47,18,1.5));
+  ueNodesGroup6.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,23,1.5));
+  ueNodesGroup6.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (47,20,1.5));
   ueNodesGroup7.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (45,20,1.5));
   ueNodesGroup7.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (47,18,1.5));
   // setting speed
@@ -787,12 +791,12 @@ int main (int argc, char *argv[])
   ueNodesGroup2.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (48,48,1.5));
   ueNodesGroup3.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (5,55,1.5));
   ueNodesGroup3.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (8,58,1.5));
-  ueNodesGroup4.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (45,105,1.5));
+  ueNodesGroup4.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (44,106,1.5));
   ueNodesGroup4.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (48,108,1.5));
   ueNodesGroup5.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (45,10,1.5));
   ueNodesGroup5.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (43,8,1.5));
   ueNodesGroup6.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (100,65,1.5));
-  ueNodesGroup6.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (90,65,1.5));
+  ueNodesGroup6.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (90,66,1.5));
   ueNodesGroup7.Get (2)->GetObject<MobilityModel> ()->SetPosition (Vector (135,50,1.5));
   ueNodesGroup7.Get (3)->GetObject<MobilityModel> ()->SetPosition (Vector (135,70,1.5));
   // destination
@@ -806,13 +810,12 @@ int main (int argc, char *argv[])
   ueNodesGroup3.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (25,60,1.5));
   ueNodesGroup4.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (45,90,1.5));
   ueNodesGroup4.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (43,87,1.5));
-  ueNodesGroup5.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (45,20,1.5));
-  ueNodesGroup5.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (47,18,1.5));
+  ueNodesGroup5.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (44,20,1.5));
+  ueNodesGroup5.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (47,23,1.5));
   ueNodesGroup6.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (100,90,1.5));
   ueNodesGroup6.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (90,90,1.5));
   ueNodesGroup7.Get (4)->GetObject<MobilityModel> ()->SetPosition (Vector (130,45,1.5));
   ueNodesGroup7.Get (5)->GetObject<MobilityModel> ()->SetPosition (Vector (130,75,1.5));
-  
   // relay
 
 
@@ -1075,7 +1078,7 @@ int main (int argc, char *argv[])
   ApplicationContainer bulkApps, updApps;
   uint32_t trafficGeneratingNodes = 2;
   uint32_t serverPacketSize = 512;
-  uint32_t fullBufferFlowInterval = 100;
+  uint32_t fullBufferFlowInterval = 1000;
   uint32_t otherFlowPacketInterval = 3000;
 
   for (uint32_t _ind = 0; _ind < ueNodes.GetN(); ++_ind){
@@ -1601,13 +1604,13 @@ int main (int argc, char *argv[])
   //   updApps.Add(udpApp_r);
   // }
   
-  updApps.Start (MilliSeconds (0));
+  updApps.Start (MilliSeconds (10));
   updApps.Stop (MilliSeconds (endTime));
-  echoApps.Start (MilliSeconds (0));
+  echoApps.Start (MilliSeconds (10));
   echoApps.Stop (MilliSeconds (endTime));
-  packetSinkApps.Start (MilliSeconds (0));
+  packetSinkApps.Start (MilliSeconds (10));
   packetSinkApps.Stop (MilliSeconds (endTime));
-  bulkApps.Start (MilliSeconds (0));
+  bulkApps.Start (MilliSeconds (10));
   bulkApps.Stop (MilliSeconds (endTime));
   NS_LOG_DEBUG("Creating sink apps");
   // end modification

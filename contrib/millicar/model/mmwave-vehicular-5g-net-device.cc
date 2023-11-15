@@ -439,7 +439,7 @@ MmWaveMillicarUeNetDevice::UpdateConfig(void)
 bool
 MmWaveMillicarUeNetDevice::DoSend(Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber)
 {
-    // NS_LOG_FUNCTION(this << dest << protocolNumber);
+    NS_LOG_FUNCTION(this << dest << protocolNumber);
     NS_ABORT_MSG_IF(protocolNumber != Ipv4L3Protocol::PROT_NUMBER &&
                         protocolNumber != Ipv6L3Protocol::PROT_NUMBER,
                     "unsupported protocol " << protocolNumber
@@ -454,7 +454,7 @@ MmWaveMillicarUeNetDevice::DoSend(Ptr<Packet> packet, const Address& dest, uint1
 bool
 MmWaveMillicarUeNetDevice::Send(Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber)
 {
-    // NS_LOG_FUNCTION(this << dest << protocolNumber);
+    NS_LOG_FUNCTION(this << dest << protocolNumber);
     NS_ABORT_MSG_IF(protocolNumber != Ipv4L3Protocol::PROT_NUMBER &&
                         protocolNumber != Ipv6L3Protocol::PROT_NUMBER,
                     "unsupported protocol " << protocolNumber
@@ -872,7 +872,7 @@ MmWaveMillicarUeNetDevice::ReceiveMillicar (Ptr<Packet> p)
     
   }
   
-  NS_LOG_DEBUG("packet up");
+  // NS_LOG_DEBUG("packet up");
 
 
   if (ipType == 0x04)
@@ -953,7 +953,7 @@ MmWaveMillicarUeNetDevice::GetRnti() const{
 bool
 MmWaveMillicarUeNetDevice::SendMillicar (Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber)
 {
-  // NS_LOG_FUNCTION (this<< dest);
+  NS_LOG_FUNCTION (this<< dest);
   // classify the incoming packet
   uint32_t id = m_tftClassifierMillicar.Classify (packet, EpcTft::UPLINK, protocolNumber);
   NS_ASSERT ((id & 0xFFFFFF00) == 0);

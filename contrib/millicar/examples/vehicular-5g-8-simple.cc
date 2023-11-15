@@ -220,6 +220,7 @@ int main (int argc, char *argv[])
   double txpower = 10;
   std::string ltePlmnId = "111";
   uint16_t e2startingPort = 38470;
+  uint16_t e2Port = 46422;
   bool isXappEnabled = false;
   bool isDecentralizedRelay = false;
   double decentralizedRelaySnr = 5;
@@ -237,6 +238,8 @@ int main (int argc, char *argv[])
   cmd.AddValue ("transmitPowerdBm", "Transmit power of ues", txpower);
   cmd.AddValue ("ltePlmnId", "Lte plmn id, shall be used to distinguish simulation", ltePlmnId);
   cmd.AddValue ("e2StartingPort", "starting port number for the gnb e2 termination; destination is same", e2startingPort);
+  cmd.AddValue ("e2Port", "e2 port number", e2Port);
+  cmd.AddValue ("e2TermIp", "e2 termination ip", e2TermIp);
   cmd.AddValue ("isDecentralizedRelay", "Define if the simulation has decentralized relay", isDecentralizedRelay);
   cmd.AddValue ("decentralizedRelaySnr", "Define the snr value to trigger decentralized relay", decentralizedRelaySnr);
   cmd.AddValue ("isXappEnabled", "Define if the simulation has the support of Xapp", isXappEnabled);
@@ -265,12 +268,13 @@ int main (int argc, char *argv[])
   // setting plmn id 
   Config::SetDefault ("ns3::MmWaveMillicarHelper::E2TermIp", StringValue (e2TermIp));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::E2LocalPort", UintegerValue (e2startingPort));
+  Config::SetDefault ("ns3::MmWaveMillicarHelper::E2Port", UintegerValue (e2Port));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::PlmnId", StringValue (ltePlmnId));
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::PlmnId", StringValue (ltePlmnId));
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::E2Periodicity", DoubleValue (0.01));
   Config::SetDefault ("ns3::MmWaveSidelinkPhy::TxPower", DoubleValue (txpower));
   Config::SetDefault ("ns3::MmWaveSidelinkMac::HasDecentralizedRelay", BooleanValue (isDecentralizedRelay));
-  Config::SetDefault ("ns3::MmWaveSidelinkMac::DecentralizedRelaySnr", DoubleValue (decentralizedRelaySnr));
+  Config::SetDefault ("ns3::MmWaveSidelinkMac::DecentralizedRelaySnrdB", DoubleValue (decentralizedRelaySnr));
 
   if (tracesPath.find("/", 0) == std::string::npos){
     // there is only the name as sim tag

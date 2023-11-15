@@ -691,7 +691,7 @@ MmWaveSidelinkPhy::UpdateUePeerSinrEstimate(){
 
       // get this node and remote node mobility
       Ptr<MobilityModel> thisNodeMob = m_netDevice->GetNode()->GetObject<MobilityModel>();
-      NS_LOG_LOGIC("eNB mobility " << thisNodeMob->GetPosition());
+      NS_LOG_LOGIC("local node mobility " << thisNodeMob->GetPosition());
       Ptr<MobilityModel> peerNodeMob = ue->second->GetNode()->GetObject<MobilityModel>();
       NS_LOG_LOGIC("UE mobility " << peerNodeMob->GetPosition());
 
@@ -1271,7 +1271,7 @@ MmWaveSidelinkPhy::DoPrepareForReceptionFrom (uint16_t rnti)
 void
 MmWaveSidelinkPhy::AddDevice (uint64_t rnti, Ptr<NetDevice> dev)
 {
-  NS_LOG_FUNCTION (this);
+  NS_LOG_FUNCTION (this << rnti << " local " << GetRnti());
 
   if (m_deviceMap.find (rnti) == m_deviceMap.end ())
   {
