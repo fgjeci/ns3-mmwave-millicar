@@ -256,8 +256,9 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWaveMillicarHelper::NumerologyMillicar", UintegerValue (numerology));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::ChannelModelTypeMillicar", StringValue (scenario));
   
-  Config::SetDefault ("ns3::ThreeGppChannelModel::UpdatePeriod", TimeValue (MilliSeconds (10)));
-  Config::SetDefault ("ns3::ThreeGppChannelConditionModel::UpdatePeriod", TimeValue (MilliSeconds (10)));
+  Config::SetDefault ("ns3::ThreeGppChannelModel::UpdatePeriod", TimeValue (MilliSeconds (100)));
+  Config::SetDefault ("ns3::ThreeGppChannelConditionModel::UpdatePeriod", TimeValue (MilliSeconds (100)));
+  Config::SetDefault ("ns3::MmWaveCodebookBeamforming::UpdatePeriod", TimeValue (MilliSeconds (100)));
 
   Config::SetDefault ("ns3::MmWaveMillicarUeNetDevice::RlcType", StringValue("LteRlcUm"));
   Config::SetDefault ("ns3::MmWaveMillicarHelper::SchedulingPatternOptionMillicar", EnumValue(2)); // use 2 for SchedulingPatternOption=OPTIMIZED, 1 or SchedulingPatternOption=DEFAULT

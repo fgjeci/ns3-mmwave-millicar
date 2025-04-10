@@ -1091,6 +1091,19 @@ MmWaveSidelinkMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters param
   {
     it->second.push_back (params);
   }
+
+  // with the macPduMap
+  // auto macPduIt = m_macPduMap.find(params.rnti);
+  // if (macPduIt == m_macPduMap.end ())
+  // {
+  //   MacPduInfo macPduInfo(pduSfn,
+  //                           ttiAllocInfo.m_dci.m_tbSize,
+  //                           rlcPduInfo.size(),
+  //                           dciElem);
+  //   macPduIt->
+  // }else{
+
+  // }
 }
 // original
 // void

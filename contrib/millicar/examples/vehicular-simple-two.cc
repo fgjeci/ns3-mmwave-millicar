@@ -77,8 +77,9 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::MmWaveVehicularHelper::Bandwidth", DoubleValue (bandwidth));
   Config::SetDefault ("ns3::MmWaveVehicularHelper::Numerology", UintegerValue (numerology));
   
-  Config::SetDefault ("ns3::ThreeGppChannelModel::UpdatePeriod", TimeValue (MilliSeconds (10)));
-  
+  Config::SetDefault ("ns3::ThreeGppChannelModel::UpdatePeriod", TimeValue (MilliSeconds (100)));
+  Config::SetDefault ("ns3::MmWaveCodebookBeamforming::UpdatePeriod", TimeValue (MilliSeconds (100)));
+
   // create the nodes
   NodeContainer group1, group2;
   group1.Create (2);

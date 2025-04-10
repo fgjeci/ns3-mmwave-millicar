@@ -245,6 +245,11 @@ private:
   std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters> m_bufferStatusReportMap; //!< map containing the <LCID, buffer status in bits> pairs
   std::map<uint8_t, LteMacSapProvider::ReportBufferStatusParameters> m_bufferStatusReportMapRelay; //!< map containing the <LCID, buffer status in bits> pairs
 
+  // modified
+  // the macp pdu buffer
+  // rnti and the pack pdu info
+  std::map<uint16_t, struct MacPduInfo> m_macPduMap;
+
   // map to be used when relay functionality is implemented
   std::map<uint16_t, std::map<uint16_t, uint16_t>> m_relayPaths;
   // the threshold of snr for which a decentralized relay is trigerred
